@@ -11,7 +11,7 @@ Hệ thống web hỗ trợ giám thị phát hiện sớm tín hiệu bất th�
 
 ## Công nghệ
 
-- React 19, TypeScript, Vinext/Next-compatible routing, Tailwind CSS 4 và shadcn.
+- Next.js 16, React 19, TypeScript, Tailwind CSS 4 và shadcn.
 - MediaPipe Tasks Vision `FaceLandmarker` để phát hiện tối đa hai khuôn mặt, các điểm mốc mặt, hướng đầu và hướng mắt.
 - `Behavior Engine` có bộ đệm thời gian và khoảng nghỉ cảnh báo để giảm nhiễu.
 - Firebase Firestore tùy chọn cho đồng bộ nhiều máy, tương tự dự án Sổ Chủ Nhiệm Thông Minh.
@@ -19,7 +19,7 @@ Hệ thống web hỗ trợ giám thị phát hiện sớm tín hiệu bất th�
 
 ## Chạy dự án
 
-Yêu cầu Node.js 22.13 trở lên.
+Yêu cầu Node.js 24.x.
 
 ```bash
 npm install
@@ -43,7 +43,18 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 ```
 
-Đặt thêm `NEXT_PUBLIC_SITE_URL` bằng URL HTTPS chính thức để metadata chia sẻ dùng đúng địa chỉ triển khai.
+Trên Vercel, ứng dụng tự nhận tên miền từ `VERCEL_PROJECT_PRODUCTION_URL`. Chỉ cần đặt `NEXT_PUBLIC_SITE_URL` nếu muốn dùng một tên miền tùy chỉnh khác.
+
+## Triển khai trên Vercel
+
+Có thể nhập Git repository vào Vercel và để hệ thống tự nhận framework **Next.js**, hoặc triển khai bằng CLI:
+
+```bash
+npx vercel
+npx vercel --prod
+```
+
+Thiết lập các biến `NEXT_PUBLIC_FIREBASE_*` trong **Project Settings → Environment Variables**, sau đó redeploy. Không đưa `.env.local` lên Git.
 
 Ứng dụng sử dụng hai collection:
 

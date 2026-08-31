@@ -36,5 +36,9 @@ next-env.d.ts
 *.tsbuildinfo
 /dist/
 /.wrangler/
+/.vercel/
 /outputs/
 /work/
+
+.vercel
+.env*
