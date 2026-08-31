@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'AI ExamGuard — Giám sát thi thông minh',
   description: 'Hệ thống AI hỗ trợ giám thị phát hiện sớm hành vi bất thường trong phòng thi, xử lý dữ liệu ngay trên máy thí sinh.',
+  icons: { icon: '/favicon.svg' },
   openGraph: {
     title: 'AI ExamGuard — Giám sát thi thông minh',
     description: 'Phát hiện sớm, cảnh báo đúng lúc, con người quyết định.',

@@ -48,6 +48,30 @@ function ratio(value: number, min: number, max: number) {
   return (value - min) / Math.max(max - min, 0.001);
 }
 
+function cameraErrorMessage(error: unknown) {
+  if (error instanceof DOMException) {
+    switch (error.name) {
+      case 'NotAllowedError':
+      case 'SecurityError':
+        return 'Trình duyệt đang chặn quyền camera. Hãy cho phép Camera cho trang này rồi thử lại.';
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        return 'Không tìm thấy webcam trên thiết bị. Hãy kết nối camera rồi thử lại.';
+      case 'NotReadableError':
+      case 'TrackStartError':
+        return 'Không thể mở webcam. Camera có thể đang được ứng dụng khác sử dụng.';
+      case 'OverconstrainedError':
+        return 'Webcam không hỗ trợ cấu hình hình ảnh được yêu cầu.';
+      case 'AbortError':
+        return 'Trình duyệt đã dừng quá trình mở webcam. Vui lòng thử lại.';
+    }
+  }
+
+  return error instanceof Error
+    ? error.message
+    : 'Không thể khởi động webcam. Vui lòng kiểm tra quyền camera trong trình duyệt.';
+}
+
 function calculateMetrics(result: FaceLandmarkerResult, fps: number): VisionMetrics {
   const faceCount = result.faceLandmarks.length;
   if (!faceCount) return { ...initialMetrics, fps };
@@ -282,6 +306,9 @@ export default function CandidatePage() {
     setModelState('loading');
     setStatusText('Đang xin quyền sử dụng webcam…');
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Trình duyệt này không hỗ trợ truy cập webcam. Hãy dùng phiên bản Chrome hoặc Edge mới nhất.');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 }, facingMode: 'user' }, audio: false });
       streamRef.current = stream;
       if (!videoRef.current) throw new Error('Không tìm thấy vùng hiển thị camera.');
@@ -319,8 +346,10 @@ export default function CandidatePage() {
       setModelState('error');
       setRunning(false);
       runningRef.current = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
       setStatusText('Không thể khởi động webcam');
-      setErrorMessage(error instanceof Error ? error.message : 'Vui lòng cấp quyền webcam trong trình duyệt.');
+      setErrorMessage(cameraErrorMessage(error));
     }
   }
 
@@ -339,8 +368,7 @@ export default function CandidatePage() {
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><span className={`size-2.5 rounded-full ${statusTone} ${running ? 'animate-pulse' : ''}`} /><div><small className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Trạng thái</small><b className="text-xs">{statusText}</b></div></div>
         </div>
 
-        {!running ? (
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+        <div className={`grid gap-5 lg:grid-cols-[1.05fr_.95fr] ${running ? 'hidden' : ''}`}>
             <Card className="border-0 bg-white py-0 shadow-sm ring-1 ring-slate-200/80">
               <CardHeader className="border-b border-slate-100 px-6 py-5"><CardTitle className="flex items-center gap-2 font-extrabold"><UserRound className="size-5 text-blue-600" /> Thông tin phiên thi</CardTitle><CardDescription>Đối chiếu đúng phòng và số máy trước khi bắt đầu.</CardDescription></CardHeader>
               <CardContent className="grid gap-5 p-6 sm:grid-cols-2">
@@ -365,9 +393,9 @@ export default function CandidatePage() {
                 <div className="mt-1 flex items-start gap-3 rounded-xl bg-emerald-400/8 p-4 text-emerald-200"><LockKeyhole className="mt-0.5 size-4 shrink-0" /><p className="text-xs leading-5">Video không được truyền liên tục lên máy giám thị trong cấu hình mặc định.</p></div>
               </CardContent>
             </Card>
-          </div>
-        ) : (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)]">
+        </div>
+
+        <div className={`grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)] ${running ? '' : 'hidden'}`}>
             <section className="overflow-hidden rounded-[22px] bg-[#07162d] shadow-[0_24px_70px_rgba(9,28,55,.24)]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-5 py-4 text-white"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-emerald-400/12 text-emerald-300"><Radio className="size-[18px]" /></span><div><b className="block text-sm">{candidateName}</b><small className="text-[10px] font-semibold text-slate-400">{roomId} · {stationId}</small></div></div><div className="flex items-center gap-2"><Badge className={`${modelState === 'ready' ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-300/15 text-amber-200'} border-0`}><span className="mr-1 size-1.5 rounded-full bg-current" />{modelState === 'ready' ? 'AI cục bộ đang chạy' : 'Chế độ camera'}</Badge><Button variant="ghost" size="sm" onClick={stopMonitoring} className="text-slate-300 hover:bg-white/8 hover:text-white"><Square className="size-3.5" /> Dừng</Button></div></div>
               <div className="relative aspect-video bg-[#030b17]">
@@ -402,8 +430,7 @@ export default function CandidatePage() {
                 </CardContent>
               </Card>
             </aside>
-          </div>
-        )}
+        </div>
 
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-slate-500"><Info className="mt-0.5 size-4 shrink-0 text-blue-500" /><p className="text-xs leading-5"><b className="text-slate-700">Lưu ý:</b> AI ExamGuard chỉ hỗ trợ giám sát và không tự kết luận vi phạm. Mọi cảnh báo cần được giám thị xem xét cùng bối cảnh thực tế.</p></div>
       </div>
