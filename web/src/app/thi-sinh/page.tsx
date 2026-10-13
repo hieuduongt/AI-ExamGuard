@@ -23,7 +23,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import { ExamGuardHeader } from '@/components/examguard-header';
+import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
