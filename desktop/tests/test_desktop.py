@@ -9,13 +9,14 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import app_desktop as app
+from examguard_desktop import config, desktop_window
+from examguard_desktop.http_handler import ExamGuardHTTPRequestHandler
 
 
 class HubTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(('127.0.0.1', 0), app.ExamGuardHTTPRequestHandler)
+        cls.server = ThreadingHTTPServer(('127.0.0.1', 0), ExamGuardHTTPRequestHandler)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.origin = f'http://127.0.0.1:{cls.server.server_port}'
@@ -59,15 +60,15 @@ class HubTests(unittest.TestCase):
 
     def test_runtime_identifies_build(self):
         with self.request('/api/runtime') as response:
-            self.assertEqual(json.load(response)['version'], app.APP_VERSION)
+            self.assertEqual(json.load(response)['version'], config.APP_VERSION)
 
 
 class DesktopWindowTests(unittest.TestCase):
     def test_proctor_opens_separate_window_and_reuses_it(self):
-        api = app.DesktopApi(12345)
+        api = desktop_window.DesktopApi(12345)
         main_window, proctor_window = Mock(), Mock()
         windows = [main_window]
-        with patch.object(app.webview, 'windows', windows), patch.object(app.webview, 'create_window', return_value=proctor_window) as create:
+        with patch.object(desktop_window.webview, 'windows', windows), patch.object(desktop_window.webview, 'create_window', return_value=proctor_window) as create:
             self.assertTrue(api.open_proctor('http://192.168.1.10:8765'))
             self.assertEqual(create.call_args.kwargs['url'],
                              'http://127.0.0.1:12345/giam-thi?hub=http%3A%2F%2F192.168.1.10%3A8765')

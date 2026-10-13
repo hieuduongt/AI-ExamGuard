@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from app_desktop import ExamGuardHTTPRequestHandler  # noqa: E402
+from examguard_desktop.http_handler import ExamGuardHTTPRequestHandler  # noqa: E402
 
 server = ThreadingHTTPServer(('127.0.0.1', 0), ExamGuardHTTPRequestHandler)
 server.daemon_threads = True
