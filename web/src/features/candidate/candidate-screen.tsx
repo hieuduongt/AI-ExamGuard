@@ -12,14 +12,16 @@ import { SessionFormCard } from './components/session-form-card';
 import { SessionNotices } from './components/session-notices';
 import { useDeliveryStatus } from './hooks/use-delivery-status';
 import { useHubConnection } from './hooks/use-hub-connection';
+import { useHubDiscovery } from './hooks/use-hub-discovery';
 import { useMonitoringSession } from './hooks/use-monitoring-session';
 
 // Candidate page (/thi-sinh). Both the form and the monitoring view stay mounted
 // and are toggled with `hidden`, so the <video> element survives the switch.
 export function CandidateScreen() {
   const { deliveredIds, pendingCount, refreshPendingCount } = useDeliveryStatus();
-  const { hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub } = useHubConnection();
+  const { hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub, connectTo } = useHubConnection();
   const session = useMonitoringSession({ hubState, refreshPendingCount });
+  const discovery = useHubDiscovery(!session.running && hubState !== 'connected', connectTo);
   const { running, modelState, health } = session;
 
   const statusTone = health === 'critical' ? 'bg-rose-500' : health === 'warning' ? 'bg-amber-400' : running ? 'bg-emerald-500' : 'bg-slate-400';
@@ -48,7 +50,7 @@ export function CandidateScreen() {
             hubState={hubState}
             errorMessage={session.errorMessage}
             startMonitoring={session.startMonitoring}
-            hubPanel={<HubConnectionPanel hubAddress={hubAddress} hubState={hubState} hubMessage={hubMessage} changeHubAddress={changeHubAddress} connectTeacherHub={connectTeacherHub} />}
+            hubPanel={<HubConnectionPanel hubAddress={hubAddress} hubState={hubState} hubMessage={hubMessage} changeHubAddress={changeHubAddress} connectTeacherHub={connectTeacherHub} discovery={discovery} roomId={session.roomId} />}
           />
 
           <CheckListCard />

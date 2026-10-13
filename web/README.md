@@ -43,6 +43,7 @@ web/
 │   │   │   ├── hooks/
 │   │   │   │   ├── use-monitoring-session.ts   Phiên giám sát: webcam → AI → cảnh báo → nhịp tim 2 giây
 │   │   │   │   ├── use-hub-connection.ts       Địa chỉ máy giám thị + kiểm tra kết nối
+│   │   │   │   ├── use-hub-discovery.ts        Tìm máy giám thị trong LAN bằng mã kết nối 4 số
 │   │   │   │   ├── use-delivery-status.ts      Cảnh báo nào giám thị đã nhận / còn chờ gửi
 │   │   │   │   └── use-browser-guard.ts        Phát hiện chuyển tab, Ctrl/Cmd + C/V/X/P
 │   │   │   ├── components/     Từng khối giao diện (form, camera, tín hiệu, sự kiện…)
@@ -68,7 +69,8 @@ web/
 │   ├── services/               Gửi / nhận dữ liệu
 │   │   ├── exam-sync.ts        CỬA DUY NHẤT các màn hình dùng: publishEvent, publishStation,
 │   │   │                       markEventReviewed, subscribeExamData…
-│   │   ├── hub/                Kênh LAN tới máy giám thị (desktop-hub/): địa chỉ, hàng đợi gửi lại, gọi API
+│   │   ├── hub/                Kênh LAN tới máy giám thị (desktop-hub/): địa chỉ, hàng đợi gửi lại, gọi API,
+│   │   │                       hub-discovery.ts (danh sách máy giám thị tìm thấy qua /api/discover)
 │   │   ├── firebase/           Kênh Firestore (chỉ bật khi có cấu hình)
 │   │   ├── local-demo/         Kênh demo trong cùng trình duyệt (localStorage + BroadcastChannel)
 │   │   ├── browser-signals.ts  Tên các tín hiệu nội bộ giữa các phần của trang

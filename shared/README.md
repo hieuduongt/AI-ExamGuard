@@ -7,6 +7,7 @@ giá trị. File [`hub-contract.json`](hub-contract.json) là **nguồn chuẩn 
 | --- | --- | --- |
 | `appVersion` | Phiên bản phát hành | `desktop-hub/examguard_desktop/config.py` |
 | `defaultHubPort` | Cổng mặc định của trung tâm LAN | `config.py` và `web/src/services/hub/hub-url.ts` |
+| `discoveryPort`, `discoveryService` | Cổng UDP và tên dịch vụ để tự tìm máy giám thị | `config.py`, `discovery.py` |
 | `maxBodyBytes`, `eventLimit` | Giới hạn 1 MB / 500 sự kiện | `config.py` |
 | `identityFields` | Trường bắt buộc khi gửi sự kiện / trạng thái máy | `http_handler.py` và `web/src/domain/exam-types.ts` |
 | `alertTypes` | Danh sách loại cảnh báo | `web/src/domain/exam-types.ts`, `alert-catalog.ts` |

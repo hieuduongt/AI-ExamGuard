@@ -21,7 +21,7 @@ import { useProctorFeed } from './hooks/use-proctor-feed';
 
 // Teacher dashboard (/giam-thi): station map, alert feed, verification, CSV export.
 export function ProctorScreen() {
-  const { events, setEvents, stations, clock, hubUrl, hubConnected, latestAlert, setLatestAlert } = useProctorFeed();
+  const { events, setEvents, stations, clock, hubUrl, connectCode, hubConnected, latestAlert, setLatestAlert } = useProctorFeed();
   const { soundEnabled, soundBlocked, playAlertSound, onSoundButton } = useAlertSound();
   const [filter, setFilter] = useState<FilterValue>('all');
   const [queryText, setQueryText] = useState('');
@@ -71,7 +71,7 @@ export function ProctorScreen() {
       <div className="mx-auto w-[min(1380px,calc(100%-28px))] py-6 sm:py-8">
         <ProctorHeading hubConnected={hubConnected} clock={clock} onDemoAlert={addDemoAlert} onExport={exportCsv} soundEnabled={soundEnabled} soundBlocked={soundBlocked} onSoundButton={onSoundButton} />
 
-        {hubUrl && <HubAddressBanner hubUrl={hubUrl} copied={copied} onCopy={copyHubUrl} />}
+        {hubUrl && <HubAddressBanner hubUrl={hubUrl} connectCode={connectCode} copied={copied} onCopy={copyHubUrl} />}
 
         {latestAlert && <NewAlertBanner latestAlert={latestAlert} onOpen={() => { setSelectedId(latestAlert.id); setLatestAlert(null); }} />}
 

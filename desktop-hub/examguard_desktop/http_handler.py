@@ -4,7 +4,7 @@ import os
 import urllib.parse
 from http.server import SimpleHTTPRequestHandler
 
-from . import exam_store
+from . import discovery, exam_store
 from .config import APP_VERSION, MAX_BODY_SIZE
 from .network import get_lan_ip
 from .paths import get_resource_path
@@ -102,7 +102,9 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        route = urllib.parse.urlparse(self.path).path
+        parsed = urllib.parse.urlparse(self.path)
+        route = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
         if route == "/api/health":
             self.send_json(200, {"ok": True, "service": "AI ExamGuard LAN Hub"})
             return
@@ -113,10 +115,22 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
                 "port": port,
                 "hubUrl": f"http://{get_lan_ip()}:{port}",
                 "version": APP_VERSION,
+                "discovery": discovery.is_running(),
+                "connectCode": discovery.CONNECT_CODE,
             })
             return
         if route == "/api/snapshot":
+            if query.get("proctor") == ["1"]:
+                discovery.mark_proctor_active(query.get("room", [""])[0])
             self.send_json(200, exam_store.snapshot())
+            return
+        if route == "/api/discover":
+            code = query.get("code", [""])[0].strip()
+            self.send_json(200, {
+                "ok": True,
+                "running": discovery.is_running(),
+                "hubs": discovery.discovered_hubs(code),
+            })
             return
         super().do_GET()
 

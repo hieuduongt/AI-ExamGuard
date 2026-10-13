@@ -2,6 +2,8 @@
   "_doc": "Values web/ and desktop-hub/ must agree on. Code keeps its own copies; tests in both parts fail if they drift. See shared/README.md.",
   "appVersion": "2026.09.08.3",
   "defaultHubPort": 8765,
+  "discoveryPort": 8766,
+  "discoveryService": "examguard-hub",
   "maxBodyBytes": 1000000,
   "eventLimit": 500,
   "identityFields": ["roomId", "stationId", "candidateId", "candidateName"],
@@ -10,6 +12,7 @@
     "health": "GET /api/health",
     "runtime": "GET /api/runtime",
     "snapshot": "GET /api/snapshot",
+    "discover": "GET /api/discover",
     "postEvent": "POST /api/events",
     "postStation": "POST /api/stations",
     "reviewEvent": "PATCH /api/events/{id}"

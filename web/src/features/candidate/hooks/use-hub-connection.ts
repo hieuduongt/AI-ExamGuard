@@ -40,14 +40,20 @@ export function useHubConnection() {
     setHubState('unchecked');
   }
 
-  async function connectTeacherHub() {
+  async function connectTo(address: string) {
+    setHubAddress(address);
     setHubState('checking');
     setHubMessage('Đang kiểm tra kết nối…');
-    const result = await testHubConnection(hubAddress);
-    setHubAddress(result.hubUrl || hubAddress);
+    const result = await testHubConnection(address);
+    setHubAddress(result.hubUrl || address);
     setHubState(result.ok ? 'connected' : 'disconnected');
     setHubMessage(result.message);
+    return result.ok;
   }
 
-  return { hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub };
+  async function connectTeacherHub() {
+    await connectTo(hubAddress);
+  }
+
+  return { hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub, connectTo };
 }

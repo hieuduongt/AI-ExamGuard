@@ -25,6 +25,7 @@ desktop-hub/
 │   ├── server.py               Tạo máy chủ, tự đổi cổng nếu 8765 đang bận
 │   ├── http_handler.py         Phục vụ trang web + các API /api/...
 │   ├── exam_store.py           Kho dữ liệu trong bộ nhớ: sự kiện, trạng thái máy (có khóa đa luồng)
+│   ├── discovery.py            Tự tìm máy giám thị: mã kết nối 4 số, phát/nghe UDP 8766 trong LAN
 │   ├── desktop_window.py       Cửa sổ chính và cửa sổ giám thị (pywebview)
 │   ├── network.py              Tìm địa chỉ IP LAN để hiển thị cho học sinh
 │   └── paths.py                Tìm thư mục giao diện `out` (trong EXE hoặc ở ../web/out khi chạy từ mã nguồn)
@@ -33,12 +34,13 @@ desktop-hub/
 └── tests/
     ├── test_desktop.py         Kiểm thử phục vụ trang, chống trùng sự kiện, cửa sổ giám thị
     ├── test_hub_api.py         Kiểm thử "hợp đồng" API LAN (mã lỗi, giới hạn, CORS…)
+    ├── test_hub_discovery.py   Kiểm thử tự tìm máy giám thị (gói UDP, lọc theo mã, hết hạn, /api/discover)
     ├── test_contract.py        Hằng số khớp với ../shared/hub-contract.json
     └── serve_hub.py            Máy chủ thử nghiệm độc lập, dùng cho kiểm thử e2e
 ```
 
 Chỉ `desktop_window.py` và `app.py` cần thư viện `webview`; phần máy chủ (`server.py`,
-`http_handler.py`, `exam_store.py`) chạy được trên mọi hệ điều hành, nên test API chạy được cả trên macOS/Linux.
+`http_handler.py`, `exam_store.py`, `discovery.py`) chạy được trên mọi hệ điều hành, nên test API chạy được cả trên macOS/Linux.
 
 ## 3. Chạy và kiểm tra
 

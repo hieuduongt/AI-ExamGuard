@@ -36,6 +36,10 @@ Máy khác cùng Wi-Fi có thể mở bảng giám thị theo địa chỉ LAN m
 (ví dụ `http://192.168.1.12:8765/giam-thi`). macOS có thể hỏi cho phép Python nhận kết nối, hãy chọn Allow.
 Webcam trên máy khác thì không chạy qua địa chỉ `http://` LAN; thí sinh trên máy khác cần dùng bản EXE.
 
+Thử **mã kết nối** trên một máy: bật thêm trung tâm thứ hai `EXAMGUARD_PORT=8775 python3 run_hub.py`, mở
+`http://localhost:8765/giam-thi` (thấy mã 4 số), rồi mở `http://localhost:8775/thi-sinh` và gõ mã đó vào ô
+**Mã kết nối**. Ô này chỉ hiện khi trang được trung tâm phục vụ (không hiện với `npm run dev`).
+
 **Cách B, khi đang sửa code web** (tự tải lại khi lưu file):
 
 ```bash

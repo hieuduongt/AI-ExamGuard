@@ -12,7 +12,7 @@ import {
   saveStationToFirestore,
   subscribeFirestore,
 } from '@/services/firebase/firestore-sync';
-import { fetchHubSnapshot } from '@/services/hub/hub-client';
+import { fetchHubSnapshot, type ProctorPresence } from '@/services/hub/hub-client';
 import { postToHub } from '@/services/hub/hub-transport';
 import { activeHubUrl } from '@/services/hub/hub-url';
 import { enqueueEvent, flushPendingEvents } from '@/services/hub/outbox';
@@ -27,8 +27,9 @@ import {
 
 export { hasFirebaseConfig };
 export type { HubStatus } from '@/services/browser-signals';
-export { getDesktopRuntime, testHubConnection, type HubRuntime } from '@/services/hub/hub-client';
-export { getConfiguredHubUrl, normalizeHubUrl, setConfiguredHubUrl } from '@/services/hub/hub-url';
+export { getDesktopRuntime, testHubConnection, type HubRuntime, type ProctorPresence } from '@/services/hub/hub-client';
+export { fetchDiscoveredHubs, isConnectCode, sameRoom, type DiscoveredHub } from '@/services/hub/hub-discovery';
+export { getConfiguredHubUrl, normalizeHubUrl, setConfiguredHubUrl, setPageHubUrl } from '@/services/hub/hub-url';
 export { flushPendingEvents, getPendingEventCount } from '@/services/hub/outbox';
 export { demoStations } from '@/services/local-demo/demo-data';
 
@@ -70,6 +71,7 @@ export function markEventReviewed(id: string, reviewed = true) {
 export function subscribeExamData(
   onEvents: (events: ExamEvent[]) => void,
   onStations: (stations: StationStatus[]) => void,
+  proctor?: ProctorPresence,
 ) {
   let authoritative = false;
   const stopLocal = subscribeLocalData(
@@ -88,7 +90,7 @@ export function subscribeExamData(
     if (!hubUrl || stopped || polling) return;
     polling = true;
     try {
-      const payload = await fetchHubSnapshot(hubUrl);
+      const payload = await fetchHubSnapshot(hubUrl, proctor);
       if (stopped) return;
       authoritative = true;
       onEvents(Array.isArray(payload.events) ? payload.events : []);

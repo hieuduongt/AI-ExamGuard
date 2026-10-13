@@ -9,7 +9,11 @@ export interface HubRuntime {
   port: number;
   hubUrl: string;
   version?: string;
+  discovery?: boolean;
+  connectCode?: string;
 }
+
+export type ProctorPresence = { room: string };
 
 export async function testHubConnection(value: string) {
   const hubUrl = normalizeHubUrl(value);
@@ -41,8 +45,11 @@ export async function getDesktopRuntime(): Promise<HubRuntime | null> {
   }
 }
 
-export async function fetchHubSnapshot(hubUrl: string) {
-  const response = await fetchWithTimeout(`${hubUrl}/api/snapshot`);
+// With `proctor`, the hub also learns a dashboard is open, so it announces itself
+// on the LAN (desktop-hub/examguard_desktop/discovery.py).
+export async function fetchHubSnapshot(hubUrl: string, proctor?: ProctorPresence) {
+  const query = proctor ? `?${new URLSearchParams({ proctor: '1', room: proctor.room })}` : '';
+  const response = await fetchWithTimeout(`${hubUrl}/api/snapshot${query}`);
   if (!response.ok) throw new Error('LAN hub unavailable');
   return await response.json() as { events?: ExamEvent[]; stations?: StationStatus[] };
 }

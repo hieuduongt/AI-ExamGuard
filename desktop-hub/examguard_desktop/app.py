@@ -1,5 +1,6 @@
 import threading
 
+from . import discovery
 from .desktop_window import open_main_window, run_gui
 from .server import create_server
 
@@ -11,6 +12,7 @@ def main():
     server_thread.start()
 
     port = server.server_address[1]
+    discovery.start(port)
     open_main_window(port)
 
     try:

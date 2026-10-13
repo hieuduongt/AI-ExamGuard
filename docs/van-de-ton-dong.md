@@ -30,6 +30,11 @@ nghiệp vụ, hành vi**, chúng được giữ nguyên và ghi lại ở đây
    của `ThreadingHTTPServer` (`request_queue_size = 5`) khi trình duyệt tải song song nhiều file.
    Cần kiểm tra trên Windows với nhiều máy; hướng xử lý: tăng `request_queue_size` trong `desktop-hub/examguard_desktop/server.py`.
 
+7b. **Tự tìm máy giám thị bằng mã kết nối** (UDP `8766`, `docs/ky-thuat/api-lan.md`): mã 4 số đi dạng chữ thường
+   trong LAN, chỉ để phân biệt máy giám thị, không phải mật khẩu. Wi-Fi có "client isolation" hoặc chặn broadcast
+   sẽ làm tính năng không chạy, khi đó vẫn nhập địa chỉ như cũ. Mới kiểm thử thật trên macOS (hai trung tâm trên
+   cùng một máy); cần thử trên Windows với 2 máy thật và Windows Firewall.
+
 ## Tài liệu và công cụ
 
 8. **Các script trong `docs/tools/`** chứa nội dung câu lệnh lịch sử (nhắc `lib/…`, `app_desktop.py` một file,

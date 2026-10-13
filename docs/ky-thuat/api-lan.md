@@ -24,12 +24,21 @@ Các giá trị chung (cổng, giới hạn, trường bắt buộc) nằm ở [
 `200 {"ok": true, "service": "AI ExamGuard LAN Hub"}` — dùng khi học sinh bấm "Kiểm tra kết nối".
 
 ### `GET /api/runtime`
-`200 {"ok": true, "port": 8765, "hubUrl": "http://<IP LAN>:8765", "version": "2026.09.08.3"}` — trang giám thị
-dùng để hiển thị địa chỉ cho học sinh.
+`200 {"ok": true, "port": 8765, "hubUrl": "http://<IP LAN>:8765", "version": "2026.09.08.3", "discovery": true, "connectCode": "4821"}`
+— trang giám thị dùng để hiển thị địa chỉ và mã kết nối cho học sinh. `hubUrl` lấy IP LAN **hiện tại** mỗi lần gọi.
+`discovery` = máy chủ đang nghe UDP (xem "Tự tìm máy giám thị" bên dưới); `connectCode` sinh ngẫu nhiên mỗi lần
+mở ứng dụng. Trang giám thị mở từ chính trung tâm (không có `?hub=`) luôn đọc trung tâm đó, bỏ qua địa chỉ cũ đã lưu.
 
 ### `GET /api/snapshot`
 `200 {"events": [...], "stations": [...]}`. `events` sắp xếp theo `timestamp` giảm dần; `stations` theo `roomId`
-rồi `stationId`. Dashboard gọi mỗi giây.
+rồi `stationId`. Dashboard gọi mỗi giây với `?proctor=1&room=<tên phòng trong Quản trị>`: hai tham số này chỉ
+báo cho trung tâm biết đang có dashboard mở (để phát tín hiệu UDP), không đổi dữ liệu trả về.
+
+### `GET /api/discover?code=XXXX`
+`200 {"ok": true, "running": true, "hubs": [{"hubUrl": "http://192.168.1.10:8765", "room": "Phòng thi 01", "host": "PC-GV", "version": "..."}]}`
+— các máy giám thị mà trung tâm **của chính máy này** nghe được trong 8 giây gần nhất. Có `code` thì chỉ trả máy
+có đúng mã đó; mã không bao giờ nằm trong kết quả. `running: false` khi không nghe được UDP (trang thí sinh khi đó
+chỉ hiện ô nhập địa chỉ). Trang thí sinh gọi khi chưa kết nối.
 
 ### `POST /api/events` — gửi một cảnh báo
 Thân: một `ExamEvent` (xem `web/src/domain/exam-types.ts`). Bắt buộc `roomId`, `stationId`, `candidateId`,
@@ -54,3 +63,15 @@ Trả `200 {"ok": true}` nếu tìm thấy, `404 {"ok": false}` nếu không.
 
 ### Khác
 `POST`/`PATCH` vào đường dẫn không có → `404 {"ok": false, "error": "Không tìm thấy API"}`.
+
+## Tự tìm máy giám thị (UDP, cổng `8766`)
+
+Mã: `desktop-hub/examguard_desktop/discovery.py`; test: `desktop-hub/tests/test_hub_discovery.py`.
+
+- Mọi trung tâm đều nghe UDP cổng `8766` (`discoveryPort` trong `shared/hub-contract.json`).
+- Chỉ khi có dashboard giám thị đang mở (đã gọi `/api/snapshot?proctor=1` trong 10 giây gần nhất), trung tâm mới
+  phát mỗi 2 giây một gói JSON tới `255.255.255.255` và địa chỉ broadcast /24 của card mạng chính:
+  `{"service": "examguard-hub", "version": "...", "code": "4821", "room": "Phòng thi 01", "host": "PC-GV", "port": 8765}`.
+- Bên nhận lấy IP từ chính gói tin (không tin IP ghi trong nội dung), bỏ qua gói sai `service`, sai cổng, mã không
+  đủ 4 số hoặc lớn hơn 2 KB. Máy im lặng quá 8 giây bị xóa khỏi danh sách.
+- Mã kết nối gửi dạng chữ thường trong LAN: chỉ để phân biệt các máy giám thị, **không phải mật khẩu**.
