@@ -51,22 +51,20 @@ Mục lục đầy đủ: [docs/README.md](docs/README.md).
 
 ## Chạy nhanh
 
-Thử giao diện trên một máy (Node.js 24):
+Trang Thí sinh chỉ cho bấm bắt đầu khi đã kết nối được máy giám thị (trung tâm LAN), nên lúc chạy
+thử luôn cần bật trung tâm LAN (Node.js 24, Python 3.9+):
 
 ```bash
-cd web
-npm ci
-npm run dev          # mở http://localhost:3000, rồi mở /thi-sinh và /giam-thi ở hai tab
+cd web && npm ci && npm run build      # tạo web/out
+cd ../desktop-hub
+python3 run_hub.py                     # mọi hệ điều hành: chỉ bật trung tâm LAN ở cổng 8765
+# Windows, mở cửa sổ ứng dụng như bản EXE: pip install -r requirements.txt && python app_desktop.py
 ```
 
-Chạy như bản EXE (máy chủ LAN thật):
-
-```bash
-cd web && npm run build
-cd ../desktop-hub && pip install -r requirements.txt
-python app_desktop.py            # Windows: mở cửa sổ ứng dụng
-python tests/serve_hub.py        # macOS/Linux: chỉ bật máy chủ, mở địa chỉ in ra bằng Chrome
-```
+Mở Chrome tới `http://localhost:8765/thi-sinh`, nhập địa chỉ máy giám thị `localhost:8765` → **Kiểm tra
+kết nối** → điền thông tin → bắt đầu. Mở `http://localhost:8765/giam-thi` ở **một cửa sổ riêng**
+(chuyển tab trên cửa sổ thí sinh sẽ bị tính là rời màn hình thi). Hướng dẫn chi tiết, kể cả trên macOS:
+[docs/van-hanh/chay-va-build.md](docs/van-hanh/chay-va-build.md).
 
 Build EXE (Windows, PowerShell): `powershell -ExecutionPolicy Bypass -File scripts/build-exe.ps1`.
 

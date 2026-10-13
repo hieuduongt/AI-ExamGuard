@@ -18,6 +18,7 @@ Cùng một file EXE dùng cho cả máy giáo viên và máy học sinh.
 ```text
 desktop-hub/
 ├── app_desktop.py              Điểm khởi động (`python app_desktop.py`), cũng là điểm vào khi build EXE
+├── run_hub.py                  Chỉ bật trung tâm LAN ở cổng 8765, không mở cửa sổ (macOS/Linux, chạy thử)
 ├── examguard_desktop/          Toàn bộ logic, mỗi file một việc:
 │   ├── config.py               Phiên bản, cổng mặc định 8765, giới hạn 1 MB / 500 sự kiện
 │   ├── app.py                  main(): bật máy chủ → mở cửa sổ → khi đóng cửa sổ thì tắt máy chủ
@@ -48,8 +49,12 @@ pip install -r requirements.txt
 # Cần build giao diện trước: (cd ../web && npm ci && npm run build)
 python app_desktop.py                         # chạy ứng dụng (Windows)
 python -m unittest discover -s tests -v       # kiểm thử
-python tests/serve_hub.py                     # chỉ bật máy chủ (in ra địa chỉ), không mở cửa sổ
+python3 run_hub.py                            # mọi hệ điều hành: chỉ bật trung tâm LAN (0.0.0.0:8765), không mở cửa sổ
+python3 -m unittest discover -s tests -p "test_[hc]*.py"   # macOS chưa cài pywebview: bỏ phần cửa sổ
 ```
+
+`run_hub.py` không cần `pip install`. Khác với `tests/serve_hub.py` (chỉ nghe 127.0.0.1, cổng ngẫu nhiên,
+dành cho e2e), `run_hub.py` nghe mọi card mạng như bản EXE nên máy khác trong LAN truy cập được.
 
 Đổi cổng: đặt biến môi trường `EXAMGUARD_PORT`.
 

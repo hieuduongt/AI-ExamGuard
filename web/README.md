@@ -94,7 +94,7 @@ Yêu cầu Node.js 24.x (22.x vẫn chạy được, chỉ cảnh báo).
 
 ```bash
 npm ci               # cài thư viện lần đầu
-npm run dev          # chạy thử: http://localhost:3000
+npm run dev          # chạy thử: http://localhost:3000 (cần bật thêm desktop-hub/run_hub.py để thí sinh bắt đầu được)
 npm run lint         # kiểm tra quy tắc code
 npx tsc --noEmit     # kiểm tra kiểu TypeScript
 npm test             # kiểm thử đơn vị

@@ -91,7 +91,7 @@ Các màn hình chỉ gọi `web/src/services/exam-sync.ts`, file này gửi d�
 | --- | --- | --- |
 | **LAN (chính)** | Chạy bằng EXE, hoặc trang web đã nhập địa chỉ máy giám thị | Nhiều máy trong cùng mạng LAN/Wi-Fi, không cần Internet |
 | **Firebase** | Có cấu hình `NEXT_PUBLIC_FIREBASE_*` khi build web | Nhiều máy qua Internet (cần bổ sung bảo mật trước khi dùng thật) |
-| **Demo cục bộ** | Luôn chạy song song | Chỉ các tab trong cùng một trình duyệt; dùng để trình diễn (`npm run dev`) |
+| **Kênh cục bộ trong trình duyệt** | Luôn chạy song song | Chỉ các tab/cửa sổ trong cùng một trình duyệt. Không thay được LAN/Firebase: thí sinh vẫn phải kết nối máy giám thị mới bắt đầu được |
 
 Khi trung tâm LAN hoặc Firebase đã trả lời, dữ liệu từ đó được coi là chính thức và dữ liệu demo không ghi đè lên nữa.
 
