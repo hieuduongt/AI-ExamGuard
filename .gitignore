@@ -12,8 +12,8 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # ---------- Desktop (Python / PyInstaller) ----------
-/desktop/build/
-/desktop/dist/
+/desktop-hub/build/
+/desktop-hub/dist/
 __pycache__/
 *.py[cod]
 .venv/

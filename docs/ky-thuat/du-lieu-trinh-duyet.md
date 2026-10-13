@@ -41,4 +41,4 @@ Security Rules; không dùng rules công khai `allow read, write: if true`.
 ## Cầu nối desktop
 
 Khi chạy trong EXE, trang có `window.pywebview.api.open_proctor(hubUrl)` để mở cửa sổ giám thị riêng
-(`web/src/services/desktop-bridge.ts` ↔ `desktop/examguard_desktop/desktop_window.py`).
+(`web/src/services/desktop-bridge.ts` ↔ `desktop-hub/examguard_desktop/desktop_window.py`).

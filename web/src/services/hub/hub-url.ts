@@ -1,6 +1,7 @@
 import { hasFirebaseConfig } from '@/services/firebase/firebase-client';
 
 const HUB_KEY = 'examguard:teacher-hub:v1';
+// Must match shared/hub-contract.json (tests/unit/contract.test.cjs).
 export const DEFAULT_HUB_PORT = '8765';
 
 // Accepts "192.168.1.10", "192.168.1.10:8765" or a full URL; returns "" if invalid.

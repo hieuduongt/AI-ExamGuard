@@ -54,8 +54,12 @@ không ghi đè lên nữa.
 ```text
 web/  ──npm run build──▶ web/out/ (HTML/JS tĩnh + mô hình AI)
                               │
-desktop/ (Python) ────────────┴──PyInstaller──▶ 1 file EXE
+desktop-hub/ (Python) ────────────┴──PyInstaller──▶ 1 file EXE
 ```
+
+Hai phần dùng hai ngôn ngữ (TypeScript và Python) nhưng chỉ nối với nhau qua hai điểm: thư mục
+`web/out` và API LAN. Các giá trị hai bên phải khớp (cổng, phiên bản, trường bắt buộc, loại cảnh báo)
+được ghi trong `shared/hub-contract.json` và kiểm tra tự động ở cả hai phía.
 
 Một EXE dùng cho mọi máy. Máy giáo viên mở trang Giám thị và đọc địa chỉ LAN của mình
 (ví dụ `http://192.168.1.10:8765`); máy học sinh nhập địa chỉ đó ở trang Thí sinh.
@@ -63,4 +67,4 @@ Một EXE dùng cho mọi máy. Máy giáo viên mở trang Giám thị và đ�
 ## Đọc tiếp
 
 - Quy tắc tạo cảnh báo: [nghiep-vu/quy-tac-canh-bao.md](nghiep-vu/quy-tac-canh-bao.md)
-- Cấu trúc code: [web/README.md](../web/README.md), [desktop/README.md](../desktop/README.md)
+- Cấu trúc code: [web/README.md](../web/README.md), [desktop-hub/README.md](../desktop-hub/README.md)

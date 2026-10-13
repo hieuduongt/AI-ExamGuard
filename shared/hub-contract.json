@@ -1,0 +1,17 @@
+{
+  "_doc": "Values web/ and desktop-hub/ must agree on. Code keeps its own copies; tests in both parts fail if they drift. See shared/README.md.",
+  "appVersion": "2026.09.08.3",
+  "defaultHubPort": 8765,
+  "maxBodyBytes": 1000000,
+  "eventLimit": 500,
+  "identityFields": ["roomId", "stationId", "candidateId", "candidateName"],
+  "alertTypes": ["no_face", "multiple_faces", "head_turn", "head_pose", "gaze_away", "focus_lost", "restricted_input"],
+  "endpoints": {
+    "health": "GET /api/health",
+    "runtime": "GET /api/runtime",
+    "snapshot": "GET /api/snapshot",
+    "postEvent": "POST /api/events",
+    "postStation": "POST /api/stations",
+    "reviewEvent": "PATCH /api/events/{id}"
+  }
+}

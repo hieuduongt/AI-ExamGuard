@@ -14,4 +14,6 @@
 | `tools/` | Script Python sinh các file docx trong `tai-lieu-du-thi/` (`pip install -r tools/requirements.txt`) | Người làm hồ sơ |
 | `archive/du-an-python-cu/` | Phiên bản Python cũ (chỉ lưu tham khảo, không còn dùng) | — |
 
-Tài liệu riêng của từng phần code: [web/README.md](../web/README.md), [desktop/README.md](../desktop/README.md).
+Hợp đồng chung giữa hai phần code: [shared/README.md](../shared/README.md).
+
+Tài liệu riêng của từng phần code: [web/README.md](../web/README.md), [desktop-hub/README.md](../desktop-hub/README.md).

@@ -1,5 +1,5 @@
 // Shared data shapes for an exam session. These fields are also the LAN API
-// contract with desktop/ (see docs/ky-thuat/api-lan.md); rename nothing here
+// contract with desktop-hub/ (see docs/ky-thuat/api-lan.md); rename nothing here
 // without updating the desktop hub.
 
 export type AlertSeverity = 'info' | 'warning' | 'critical';

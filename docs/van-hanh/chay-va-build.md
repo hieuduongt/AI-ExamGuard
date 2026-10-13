@@ -5,7 +5,7 @@
 | Công cụ | Phiên bản | Dùng cho |
 | --- | --- | --- |
 | Node.js | 24.x | `web/` |
-| Python | 3.9+ (Windows: 3.11+ khuyến nghị) | `desktop/` |
+| Python | 3.9+ (Windows: 3.11+ khuyến nghị) | `desktop-hub/` |
 | Windows 10/11 + Edge WebView2 | — | Chạy cửa sổ ứng dụng và build EXE |
 
 ## 1. Chạy thử giao diện (mọi hệ điều hành)
@@ -52,8 +52,8 @@ mất mạng rồi gửi lại → bấm Dừng.
 ```bash
 cd web && npm run build
 # Mở hai máy chủ thử nghiệm độc lập (mỗi lệnh in ra một địa chỉ):
-python ../desktop/tests/serve_hub.py      # → URL_THI_SINH
-python ../desktop/tests/serve_hub.py      # → URL_GIAM_THI
+python ../desktop-hub/tests/serve_hub.py      # → URL_THI_SINH
+python ../desktop-hub/tests/serve_hub.py      # → URL_GIAM_THI
 npm i --no-save playwright                # hoặc đặt PLAYWRIGHT_MODULE tới bản đã cài
 node tests/e2e/alert-flow.cjs URL_THI_SINH URL_GIAM_THI
 ```
@@ -71,16 +71,17 @@ powershell -ExecutionPolicy Bypass -File scripts/build-exe.ps1
 powershell -ExecutionPolicy Bypass -File scripts/build-exe.ps1 -Name AI_ExamGuard_2026_09_08_3
 ```
 
-Script lần lượt: `npm ci` + `npm run build` trong `web/` → PyInstaller với `desktop/examguard.spec`
+Script lần lượt: `npm ci` + `npm run build` trong `web/` → PyInstaller với `desktop-hub/examguard.spec`
 → chép EXE vào `release/`. Làm tay tương đương:
 
 ```powershell
 cd web; npm ci; npm run build
 cd ../desktop; $env:EXAMGUARD_EXE_NAME = 'AI_ExamGuard_Portable'; python -m PyInstaller --noconfirm examguard.spec
-# kết quả: desktop/dist/AI_ExamGuard_Portable.exe
+# kết quả: desktop-hub/dist/AI_ExamGuard_Portable.exe
 ```
 
-Khi ra phiên bản mới, đổi `APP_VERSION` trong `desktop/examguard_desktop/config.py`.
+Khi ra phiên bản mới, đổi `appVersion` trong `shared/hub-contract.json` và `APP_VERSION` trong
+`desktop-hub/examguard_desktop/config.py` (test hợp đồng sẽ báo nếu quên một trong hai).
 
 ## 5. Triển khai web lên Vercel (tùy chọn)
 

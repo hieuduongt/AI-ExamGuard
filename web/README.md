@@ -67,7 +67,7 @@ web/
 │   ├── services/               Gửi / nhận dữ liệu
 │   │   ├── exam-sync.ts        CỬA DUY NHẤT các màn hình dùng: publishEvent, publishStation,
 │   │   │                       markEventReviewed, subscribeExamData…
-│   │   ├── hub/                Kênh LAN tới máy giám thị (desktop/): địa chỉ, hàng đợi gửi lại, gọi API
+│   │   ├── hub/                Kênh LAN tới máy giám thị (desktop-hub/): địa chỉ, hàng đợi gửi lại, gọi API
 │   │   ├── firebase/           Kênh Firestore (chỉ bật khi có cấu hình)
 │   │   ├── local-demo/         Kênh demo trong cùng trình duyệt (localStorage + BroadcastChannel)
 │   │   ├── browser-signals.ts  Tên các tín hiệu nội bộ giữa các phần của trang
@@ -98,7 +98,7 @@ npm run dev          # chạy thử: http://localhost:3000
 npm run lint         # kiểm tra quy tắc code
 npx tsc --noEmit     # kiểm tra kiểu TypeScript
 npm test             # kiểm thử đơn vị
-npm run build        # xuất bản tĩnh ra out/ (desktop/ dùng thư mục này)
+npm run build        # xuất bản tĩnh ra out/ (desktop-hub/ dùng thư mục này)
 ```
 
 Webcam chỉ hoạt động trên `localhost` hoặc HTTPS. Kiểm thử toàn luồng (e2e) và build EXE:
@@ -130,5 +130,6 @@ không hiểu nhau hoặc mất dữ liệu đã lưu trong trình duyệt. Chi 
 
 - Đường dẫn trang: `/`, `/thi-sinh`, `/giam-thi`, `/quan-tri`.
 - Khóa localStorage `examguard:*`, kênh `examguard:live:v2`, tên sự kiện `examguard-*`.
-- Đường dẫn và dạng dữ liệu API LAN (`/api/...`).
+- Đường dẫn và dạng dữ liệu API LAN (`/api/...`), cổng mặc định, danh sách loại cảnh báo — nguồn chuẩn ở
+  [`shared/hub-contract.json`](../shared/hub-contract.json), được `tests/unit/contract.test.cjs` kiểm tra.
 - `id` của các ô nhập (`candidate-name`, `candidate-id`, `room-id`, `station-id`…) và nội dung nút — kiểm thử e2e dựa vào chúng.

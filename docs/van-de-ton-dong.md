@@ -28,7 +28,7 @@ nghiệp vụ, hành vi**, chúng được giữ nguyên và ghi lại ở đây
 7. **Máy chủ LAN đôi khi ngắt kết nối khi tải trang lần đầu.** Kiểm thử e2e trên macOS thấy khoảng 1/3 lần
    một file JS bị `ERR_CONNECTION_RESET` (cả bản trước và sau quy hoạch). Nghi do hàng đợi kết nối mặc định
    của `ThreadingHTTPServer` (`request_queue_size = 5`) khi trình duyệt tải song song nhiều file.
-   Cần kiểm tra trên Windows với nhiều máy; hướng xử lý: tăng `request_queue_size` trong `desktop/examguard_desktop/server.py`.
+   Cần kiểm tra trên Windows với nhiều máy; hướng xử lý: tăng `request_queue_size` trong `desktop-hub/examguard_desktop/server.py`.
 
 ## Tài liệu và công cụ
 

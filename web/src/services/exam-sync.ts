@@ -2,7 +2,7 @@
 
 // Single entry point the screens use to send and receive exam data. Each call
 // fans out to every available channel: local demo storage, the LAN hub
-// (desktop/), and Firebase when configured.
+// (desktop-hub/), and Firebase when configured.
 import type { ExamEvent, StationStatus } from '@/domain/exam-types';
 import { emitHubStatus } from '@/services/browser-signals';
 import { hasFirebaseConfig } from '@/services/firebase/firebase-client';

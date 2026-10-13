@@ -1,4 +1,4 @@
-# desktop/ — Ứng dụng Windows và trung tâm cảnh báo LAN
+# desktop-hub/ — Ứng dụng Windows và trung tâm cảnh báo LAN
 
 ## 1. Phần này làm gì?
 
@@ -16,7 +16,7 @@ Cùng một file EXE dùng cho cả máy giáo viên và máy học sinh.
 ## 2. Cấu trúc thư mục
 
 ```text
-desktop/
+desktop-hub/
 ├── app_desktop.py              Điểm khởi động (`python app_desktop.py`), cũng là điểm vào khi build EXE
 ├── examguard_desktop/          Toàn bộ logic, mỗi file một việc:
 │   ├── config.py               Phiên bản, cổng mặc định 8765, giới hạn 1 MB / 500 sự kiện
@@ -32,6 +32,7 @@ desktop/
 └── tests/
     ├── test_desktop.py         Kiểm thử phục vụ trang, chống trùng sự kiện, cửa sổ giám thị
     ├── test_hub_api.py         Kiểm thử "hợp đồng" API LAN (mã lỗi, giới hạn, CORS…)
+    ├── test_contract.py        Hằng số khớp với ../shared/hub-contract.json
     └── serve_hub.py            Máy chủ thử nghiệm độc lập, dùng cho kiểm thử e2e
 ```
 
@@ -65,8 +66,7 @@ Chi tiết: [docs/van-hanh/chay-va-build.md](../docs/van-hanh/chay-va-build.md).
 
 | Muốn | Sửa |
 | --- | --- |
-| Tăng phiên bản | `examguard_desktop/config.py` (`APP_VERSION`) |
-| Đổi cổng mặc định, giới hạn số sự kiện | `examguard_desktop/config.py` (đồng bộ với `DEFAULT_HUB_PORT` trong `web/src/services/hub/hub-url.ts`) |
+| Tăng phiên bản, đổi cổng mặc định, giới hạn | `../shared/hub-contract.json` trước, rồi `examguard_desktop/config.py` (cổng: cả `web/src/services/hub/hub-url.ts`); test hợp đồng báo chỗ lệch |
 | Thêm API mới | `examguard_desktop/http_handler.py` (+ dữ liệu trong `exam_store.py`, + test trong `tests/test_hub_api.py`, + `docs/ky-thuat/api-lan.md`) |
 | Lưu dữ liệu ra file thay vì bộ nhớ | `examguard_desktop/exam_store.py` (giữ nguyên tên hàm) |
 | Kích thước, tiêu đề cửa sổ | `examguard_desktop/desktop_window.py` |

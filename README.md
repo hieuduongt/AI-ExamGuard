@@ -10,18 +10,19 @@ Phiên bản hiện tại: `2026.09.08.3`.
 
 ```text
 DUANDUNGAI/
-├── web/        Giao diện + AI nhận diện (Next.js). Chạy trên trình duyệt hoặc bên trong EXE.
-├── desktop/    Ứng dụng Windows (Python): mở giao diện web và làm "trung tâm cảnh báo LAN".
-├── docs/       Tài liệu: tổng quan, quy tắc cảnh báo, API, vận hành, hồ sơ dự thi.
-├── scripts/    Script tiện ích (build EXE trên Windows).
-└── release/    File EXE đã build (không đưa lên Git).
+├── web/         Giao diện + AI nhận diện (Next.js). Chạy trên trình duyệt hoặc bên trong EXE.
+├── desktop-hub/ Ứng dụng Windows (Python): máy chủ "trung tâm cảnh báo LAN" + cửa sổ ứng dụng.
+├── shared/      Hợp đồng chung giữa hai phần (cổng, phiên bản, trường bắt buộc, API).
+├── docs/        Tài liệu: tổng quan, quy tắc cảnh báo, API, vận hành, hồ sơ dự thi.
+├── scripts/     Script tiện ích (build EXE trên Windows).
+└── release/     File EXE đã build (không đưa lên Git).
 ```
 
 Hai phần code liên quan theo một chiều: `web/` được build ra thư mục `web/out/` (HTML/JS tĩnh),
-sau đó `desktop/` gói `web/out/` cùng chương trình Python thành **một file EXE**.
+sau đó `desktop-hub/` gói `web/out/` cùng chương trình Python thành **một file EXE**.
 
 ```text
-web/ (mã nguồn) ──npm run build──▶ web/out/ ──PyInstaller (desktop/)──▶ release/AI_ExamGuard_*.exe
+web/ (mã nguồn) ──npm run build──▶ web/out/ ──PyInstaller (desktop-hub/)──▶ release/AI_ExamGuard_*.exe
 ```
 
 ## Tôi muốn…
@@ -32,7 +33,8 @@ web/ (mã nguồn) ──npm run build──▶ web/out/ ──PyInstaller (desk
 | Dùng EXE trong phòng thi (giáo viên, học sinh) | [docs/van-hanh/HUONG_DAN_CHAY_EXE.txt](docs/van-hanh/HUONG_DAN_CHAY_EXE.txt) |
 | Biết khi nào AI tạo cảnh báo | [docs/nghiep-vu/quy-tac-canh-bao.md](docs/nghiep-vu/quy-tac-canh-bao.md) |
 | Sửa giao diện hoặc AI | [web/README.md](web/README.md) |
-| Sửa ứng dụng Windows / máy chủ LAN | [desktop/README.md](desktop/README.md) |
+| Sửa ứng dụng Windows / máy chủ LAN | [desktop-hub/README.md](desktop-hub/README.md) |
+| Đổi giá trị mà cả hai phần dùng chung (cổng, phiên bản…) | [shared/README.md](shared/README.md) |
 | Chạy thử, kiểm thử, build EXE, triển khai web | [docs/van-hanh/chay-va-build.md](docs/van-hanh/chay-va-build.md) |
 | Tra nghĩa thuật ngữ | [docs/thuat-ngu.md](docs/thuat-ngu.md) |
 | Xem các vấn đề đã biết nhưng chưa xử lý | [docs/van-de-ton-dong.md](docs/van-de-ton-dong.md) |

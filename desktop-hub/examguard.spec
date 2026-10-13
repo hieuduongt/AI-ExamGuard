@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Build: cd desktop && pyinstaller --noconfirm examguard.spec
+# Build: cd desktop-hub && pyinstaller --noconfirm examguard.spec
 # Requires the web UI to be exported first (web/out, via `npm run build` in web/).
 import os
 

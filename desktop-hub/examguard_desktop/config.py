@@ -1,3 +1,4 @@
+# Must match shared/hub-contract.json (tests/test_contract.py).
 DEFAULT_PORT = 8765
 MAX_BODY_SIZE = 1_000_000
 EVENT_LIMIT = 500

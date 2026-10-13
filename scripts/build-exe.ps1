@@ -25,9 +25,9 @@ Invoke-Step 'Install web dependencies' 'web' { npm ci }
 Invoke-Step 'Export web UI to web/out' 'web' { npm run build }
 
 $env:EXAMGUARD_EXE_NAME = $Name
-Invoke-Step 'Package EXE with PyInstaller' 'desktop' { python -m PyInstaller --noconfirm examguard.spec }
+Invoke-Step 'Package EXE with PyInstaller' 'desktop-hub' { python -m PyInstaller --noconfirm examguard.spec }
 
 $release = Join-Path $root 'release'
 New-Item -ItemType Directory -Force $release | Out-Null
-Copy-Item (Join-Path $root "desktop/dist/$Name.exe") $release -Force
+Copy-Item (Join-Path $root "desktop-hub/dist/$Name.exe") $release -Force
 Write-Host "Done: release/$Name.exe" -ForegroundColor Green

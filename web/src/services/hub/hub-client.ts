@@ -28,7 +28,7 @@ export async function testHubConnection(value: string) {
   }
 }
 
-// Only answers when this page is served by the desktop app (desktop/).
+// Only answers when this page is served by the desktop app (desktop-hub/).
 export async function getDesktopRuntime(): Promise<HubRuntime | null> {
   if (typeof window === 'undefined') return null;
   try {

@@ -1,8 +1,9 @@
 # API trung tâm cảnh báo LAN
 
-Máy chủ trong `desktop/examguard_desktop/http_handler.py`, mặc định cổng `8765` (bận thì tự chọn cổng khác;
-đổi bằng biến môi trường `EXAMGUARD_PORT`). Kiểm thử hợp đồng: `desktop/tests/test_hub_api.py`.
+Máy chủ trong `desktop-hub/examguard_desktop/http_handler.py`, mặc định cổng `8765` (bận thì tự chọn cổng khác;
+đổi bằng biến môi trường `EXAMGUARD_PORT`). Kiểm thử hợp đồng: `desktop-hub/tests/test_hub_api.py`.
 Phía gọi: `web/src/services/hub/`.
+Các giá trị chung (cổng, giới hạn, trường bắt buộc) nằm ở [`shared/hub-contract.json`](../../shared/hub-contract.json).
 
 > Máy học sinh và máy giáo viên có thể chạy hai phiên bản EXE khác nhau. Mọi thay đổi ở đây phải
 > giữ tương thích ngược.
