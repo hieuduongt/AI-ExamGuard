@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import type { ExamEvent } from '@/domain/exam-types';
 import { markEventReviewed, publishEvent } from '@/services/exam-sync';
@@ -16,11 +16,13 @@ import { VerificationPrinciple } from './components/verification-principle';
 import { downloadEventsCsv } from './csv-export';
 import { buildDemoAlert } from './demo-alert';
 import { countStations, filterEvents, markOfflineStations, type FilterValue } from './event-filters';
+import { useAlertSound } from './hooks/use-alert-sound';
 import { useProctorFeed } from './hooks/use-proctor-feed';
 
 // Teacher dashboard (/giam-thi): station map, alert feed, verification, CSV export.
 export function ProctorScreen() {
   const { events, setEvents, stations, clock, hubUrl, hubConnected, latestAlert, setLatestAlert } = useProctorFeed();
+  const { soundEnabled, soundBlocked, playAlertSound, onSoundButton } = useAlertSound();
   const [filter, setFilter] = useState<FilterValue>('all');
   const [queryText, setQueryText] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -31,6 +33,10 @@ export function ProctorScreen() {
 
   const selectedEvent = events.find((event) => event.id === selectedId) ?? null;
   const counts = useMemo(() => countStations(activeStations, events), [activeStations, events]);
+
+  useEffect(() => {
+    if (latestAlert) playAlertSound();
+  }, [latestAlert, playAlertSound]);
 
   function reviewEvent(id: string) {
     markEventReviewed(id, true);
@@ -63,7 +69,7 @@ export function ProctorScreen() {
     <main className="min-h-screen bg-[#f3f6fb] text-slate-900">
       <ExamGuardHeader active="proctor" />
       <div className="mx-auto w-[min(1380px,calc(100%-28px))] py-6 sm:py-8">
-        <ProctorHeading hubConnected={hubConnected} clock={clock} onDemoAlert={addDemoAlert} onExport={exportCsv} />
+        <ProctorHeading hubConnected={hubConnected} clock={clock} onDemoAlert={addDemoAlert} onExport={exportCsv} soundEnabled={soundEnabled} soundBlocked={soundBlocked} onSoundButton={onSoundButton} />
 
         {hubUrl && <HubAddressBanner hubUrl={hubUrl} copied={copied} onCopy={copyHubUrl} />}
 

@@ -54,7 +54,9 @@ Yêu cầu
 3. Khi có dấu hiệu bất thường
 -----------------------------
 - Dashboard giáo viên hiển thị rõ phòng, số máy, họ tên và số báo danh.
-- Máy chuyển màu vàng/đỏ và có dải "Cảnh báo mới cần kiểm tra".
+- Máy chuyển màu vàng/đỏ, có dải "Cảnh báo mới cần kiểm tra" và kêu tiếng cảnh báo.
+  Nút "Âm thanh: Bật/Tắt" ở đầu dashboard để bật/tắt tiếng. Nếu nút chuyển thành
+  "Bấm để bật âm thanh" (trình duyệt chặn tự phát tiếng), bấm vào nút đó một lần.
 - Giáo viên mở chi tiết rồi đánh dấu đã xác minh.
 - AI chỉ phát hiện dấu hiệu nghi vấn; giáo viên là người kết luận theo quy chế.
 

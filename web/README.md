@@ -8,7 +8,7 @@ Toàn bộ những gì người dùng nhìn thấy, gồm 4 trang:
 | --- | --- | --- |
 | `/` | Mọi người | Giới thiệu, chọn vai trò |
 | `/thi-sinh` | Học sinh | Khai báo thông tin, bật webcam, AI phân tích và gửi cảnh báo |
-| `/giam-thi` | Giáo viên | Sơ đồ máy thi, danh sách cảnh báo, xác minh, xuất CSV |
+| `/giam-thi` | Giáo viên | Sơ đồ máy thi, danh sách cảnh báo kèm tiếng báo động, xác minh, xuất CSV |
 | `/quan-tri` | Quản trị | Cấu hình phòng, ngưỡng thời gian, quyền riêng tư |
 
 AI (MediaPipe Face Landmarker) chạy ngay trong trình duyệt của học sinh. Mô hình và WASM được
@@ -48,6 +48,7 @@ web/
 │   │   │   ├── components/     Từng khối giao diện (form, camera, tín hiệu, sự kiện…)
 │   │   │   └── camera-errors.ts  Thông báo lỗi webcam dễ hiểu
 │   │   ├── proctor/            Giám thị: hooks/use-proctor-feed.ts (dữ liệu trực tiếp),
+│   │   │                       hooks/use-alert-sound.ts (tiếng cảnh báo, file public/sounds/alert-warning.mp3),
 │   │   │                       event-filters.ts, csv-export.ts, components/…
 │   │   ├── admin/              Quản trị: admin-settings.ts (đọc/xuất cấu hình), components/…
 │   │   └── home/               Trang chủ: components/…

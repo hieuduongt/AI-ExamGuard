@@ -62,6 +62,8 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
             return "application/json; charset=utf-8"
         if path.endswith(".svg"):
             return "image/svg+xml"
+        if path.endswith(".mp3"):
+            return "audio/mpeg"
         return super().guess_type(path)
 
     # ---- shared helpers ----
