@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import type { BehaviorThresholds } from '@/domain/exam-types';
 import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY } from '@/domain/thresholds';
-import { hasFirebaseConfig } from '@/lib/exam-store';
+import { hasFirebaseConfig } from '@/services/exam-sync';
 
 export default function AdminPage() {
   const [settings, setSettings] = useState<BehaviorThresholds>(DEFAULT_THRESHOLDS);

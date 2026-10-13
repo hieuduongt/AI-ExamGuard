@@ -53,7 +53,8 @@ function collectGraph(entryFiles, stubs = {}) {
   return { modules, entries };
 }
 
-function loadSource(file, stubs = {}) {
+// `globals` adds browser-like globals (window, localStorage, fetch...) to the sandbox.
+function loadSource(file, stubs = {}, globals = {}) {
   const { modules, entries } = collectGraph([file], stubs);
   const cache = new Map();
   const load = (id) => {
@@ -67,7 +68,7 @@ function loadSource(file, stubs = {}) {
       if (specifier in imports) return load(imports[specifier]);
       throw new Error(`Unmapped test import: ${specifier}`);
     };
-    vm.runInNewContext(code, { exports: record.exports, module: record, require: localRequire, Map, Set, Date, Math });
+    vm.runInNewContext(code, { exports: record.exports, module: record, require: localRequire, Map, Set, Date, Math, URL, ...globals });
     return record.exports;
   };
   return load(entries[0]);

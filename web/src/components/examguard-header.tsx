@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { openProctorWindow } from '@/lib/desktop-client';
-import { getConfiguredHubUrl } from '@/lib/exam-store';
+import { openProctorWindow } from '@/services/desktop-bridge';
+import { getConfiguredHubUrl } from '@/services/exam-sync';
 import { Settings, ShieldCheck } from 'lucide-react';
 
 export function ExamGuardHeader({ active, monitoring = false }: { active?: 'candidate' | 'proctor' | 'admin'; monitoring?: boolean }) {

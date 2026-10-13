@@ -47,7 +47,7 @@ import {
   publishEvent,
   publishStation,
   testHubConnection,
-} from '@/lib/exam-store';
+} from '@/services/exam-sync';
 
 type ModelState = 'idle' | 'loading' | 'ready' | 'camera-only' | 'error';
 type HubState = 'unchecked' | 'checking' | 'connected' | 'disconnected';

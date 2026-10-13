@@ -40,7 +40,7 @@ import {
   markEventReviewed,
   publishEvent,
   subscribeExamData,
-} from '@/lib/exam-store';
+} from '@/services/exam-sync';
 
 type FilterValue = 'all' | AlertSeverity | 'unreviewed';
 

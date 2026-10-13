@@ -24,10 +24,10 @@ function injectedModules() {
     thresholds: 'src/domain/thresholds.ts',
     catalog: 'src/domain/alert-catalog.ts',
     engine: 'src/domain/behavior-engine.ts',
-    store: 'src/lib/exam-store.ts',
+    store: 'src/services/exam-sync.ts',
   }, {
     'firebase/firestore': '{}',
-    'src/lib/firebase-client.ts': '{ hasFirebaseConfig: false, getFirebaseDb: () => null }',
+    'src/services/firebase/firebase-client.ts': '{ hasFirebaseConfig: false, getFirebaseDb: () => null }',
   });
 }
 
