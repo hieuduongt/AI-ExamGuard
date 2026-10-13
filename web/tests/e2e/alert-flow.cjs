@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Run with: node tests/e2e/alert-flow.cjs STUDENT_ORIGIN TEACHER_ORIGIN
 // Set PLAYWRIGHT_MODULE to a preinstalled Playwright module directory if needed.
+// Set E2E_BROWSER_CHANNEL=chrome on machines without Microsoft Edge.
 const assert = require('node:assert/strict');
 const { browserBundle } = require('../helpers/load-source.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -32,7 +33,7 @@ function injectedModules() {
 }
 
 (async () => {
-  const browser = await chromium.launch({ channel: 'msedge', headless: true, args: [
+  const browser = await chromium.launch({ channel: process.env.E2E_BROWSER_CHANNEL || 'msedge', headless: true, args: [
     '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--disable-gpu',
   ] });
   try {
