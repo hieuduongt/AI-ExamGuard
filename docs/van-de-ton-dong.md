@@ -33,13 +33,18 @@ nghiệp vụ, hành vi**, chúng được giữ nguyên và ghi lại ở đây
 ## Tài liệu và công cụ
 
 8. **Các script trong `docs/tools/`** chứa nội dung câu lệnh lịch sử (nhắc `lib/…`, `app_desktop.py` một file,
-   `AI_ExamGuard_Portable.spec`) và một số đường dẫn đầu ra cũ (ví dụ `DU_AN_PYTHON/…`). Đây là hồ sơ
-   quá trình xây dựng nộp cuộc thi nên chưa sửa; nếu chạy lại cần chỉnh đường dẫn đầu ra.
+   `AI_ExamGuard_Portable.spec`) và ghi đầu ra vào thư mục cũ (`tai-lieu/`, `DU_AN_PYTHON/…`). Các file docx trong
+   `tai-lieu-du-thi/` đã được chỉnh tay sau khi sinh (ví dụ bản "32 câu lệnh" có thêm phần ChatGPT và hình ảnh),
+   nên **không chạy lại script để đè lên**. Muốn biết code của từng bước nằm đâu: `ky-thuat/doi-chieu-32-buoc.md`.
 
-9. **Hồ sơ dự thi** nhắc lẫn lộn công cụ AI hỗ trợ (Kiro / Codex) giữa các tài liệu — cần thống nhất trước khi nộp.
+9. **Hồ sơ dự thi chưa thống nhất công cụ AI**: hồ sơ dự án ghi "Kiro", tài liệu 32 câu lệnh ghi "ChatGPT" (tạo câu lệnh)
+   và "Codex" (thực hiện) — cần thống nhất trước khi nộp.
+
+10. **Tài liệu 32 câu lệnh mô tả nhiều hơn code đang có** ở bước 22 (khôi phục mặc định, nhập cấu hình JSON trên
+    trang Quản trị) và bước 02/29 (khóa cứng phiên bản thư viện). Chi tiết: `ky-thuat/doi-chieu-32-buoc.md`.
 
 ## Triển khai
 
-10. **Vercel**: sau khi chuyển mã nguồn web vào `web/`, phải đặt *Root Directory = `web`* trong cài đặt project.
-11. **Bảo mật Firebase**: chưa có Authentication, phân quyền, App Check, Security Rules (xem `docs/ky-thuat/du-lieu-trinh-duyet.md`).
-12. **Build EXE và e2e bằng Edge** cần chạy lại trên Windows sau quy hoạch (đã kiểm thử e2e bằng Chrome trên macOS).
+11. **Vercel**: sau khi chuyển mã nguồn web vào `web/`, phải đặt *Root Directory = `web`* trong cài đặt project.
+12. **Bảo mật Firebase**: chưa có Authentication, phân quyền, App Check, Security Rules (xem `docs/ky-thuat/du-lieu-trinh-duyet.md`).
+13. **Build EXE và e2e bằng Edge** cần chạy lại trên Windows sau quy hoạch (đã kiểm thử e2e bằng Chrome trên macOS).

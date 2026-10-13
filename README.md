@@ -1,16 +1,21 @@
-# AI ExamGuard
+# AI ExamGuard — Hệ thống AI hỗ trợ giám sát thi trên máy tính
 
-Hệ thống hỗ trợ giám thị phát hiện sớm dấu hiệu bất thường trong phòng thi trên máy tính.
-Webcam của thí sinh được AI phân tích **ngay trên máy thí sinh**; máy giám thị chỉ nhận
-các cảnh báo và chỉ số trạng thái, không nhận video. AI chỉ gợi ý, **giám thị mới là người kết luận**.
+> "Một giám thị có thể nhìn nhiều thí sinh, nhưng không thể nhìn mọi vị trí trong mọi giây."
 
-Phiên bản hiện tại: `2026.09.08.3`.
+AI ExamGuard dùng webcam của từng máy thi để phát hiện sớm các **dấu hiệu cần chú ý** (vắng mặt, có thêm người,
+quay đầu lâu, cúi/ngẩng lâu, nhìn lệch màn hình, rời cửa sổ bài thi) và báo về máy giám thị qua mạng LAN.
+
+- AI chạy **ngay trên máy thí sinh**; máy giám thị chỉ nhận cảnh báo và chỉ số trạng thái, **không nhận video**.
+- AI ExamGuard **không phát hiện "gian lận"**: AI chỉ nêu nghi vấn, **giám thị xem bối cảnh và quyết định**.
+- Nguyên tắc: *Quan sát tín hiệu → Kiểm tra thời gian → Tạo cảnh báo → Con người xác minh.*
+
+Phiên bản hiện tại: `2026.09.08.3` · Chạy trên Windows 10/11 (bản EXE), mạng LAN, không cần Internet.
 
 ## Dự án gồm những phần nào?
 
 ```text
 DUANDUNGAI/
-├── web/         Giao diện + AI nhận diện (Next.js). Chạy trên trình duyệt hoặc bên trong EXE.
+├── web/         Giao diện + AI nhận diện (TypeScript, Next.js). Chạy trong cửa sổ EXE hoặc trình duyệt.
 ├── desktop-hub/ Ứng dụng Windows (Python): máy chủ "trung tâm cảnh báo LAN" + cửa sổ ứng dụng.
 ├── shared/      Hợp đồng chung giữa hai phần (cổng, phiên bản, trường bắt buộc, API).
 ├── docs/        Tài liệu: tổng quan, quy tắc cảnh báo, API, vận hành, hồ sơ dự thi.
@@ -18,11 +23,12 @@ DUANDUNGAI/
 └── release/     File EXE đã build (không đưa lên Git).
 ```
 
-Hai phần code liên quan theo một chiều: `web/` được build ra thư mục `web/out/` (HTML/JS tĩnh),
-sau đó `desktop-hub/` gói `web/out/` cùng chương trình Python thành **một file EXE**.
+`web/` được build ra thư mục `web/out/` (HTML/JS tĩnh + mô hình AI), sau đó `desktop-hub/` gói `web/out/`
+cùng chương trình Python thành **một file EXE** dùng chung cho máy giáo viên và máy học sinh.
+Khi chạy, EXE bật máy chủ LAN và hiển thị giao diện trong cửa sổ Edge WebView2.
 
 ```text
-web/ (mã nguồn) ──npm run build──▶ web/out/ ──PyInstaller (desktop-hub/)──▶ release/AI_ExamGuard_*.exe
+web/ ──npm run build──▶ web/out/ ──PyInstaller (desktop-hub/examguard.spec)──▶ release/AI_ExamGuard_*.exe
 ```
 
 ## Tôi muốn…
@@ -36,25 +42,40 @@ web/ (mã nguồn) ──npm run build──▶ web/out/ ──PyInstaller (desk
 | Sửa ứng dụng Windows / máy chủ LAN | [desktop-hub/README.md](desktop-hub/README.md) |
 | Đổi giá trị mà cả hai phần dùng chung (cổng, phiên bản…) | [shared/README.md](shared/README.md) |
 | Chạy thử, kiểm thử, build EXE, triển khai web | [docs/van-hanh/chay-va-build.md](docs/van-hanh/chay-va-build.md) |
+| Tìm code của từng bước trong tài liệu "32 câu lệnh" | [docs/ky-thuat/doi-chieu-32-buoc.md](docs/ky-thuat/doi-chieu-32-buoc.md) |
+| Đọc hồ sơ dự thi | [docs/tai-lieu-du-thi/](docs/tai-lieu-du-thi/) |
 | Tra nghĩa thuật ngữ | [docs/thuat-ngu.md](docs/thuat-ngu.md) |
 | Xem các vấn đề đã biết nhưng chưa xử lý | [docs/van-de-ton-dong.md](docs/van-de-ton-dong.md) |
 
 Mục lục đầy đủ: [docs/README.md](docs/README.md).
 
-## Chạy nhanh (lập trình viên)
+## Chạy nhanh
+
+Thử giao diện trên một máy (Node.js 24):
 
 ```bash
 cd web
 npm ci
-npm run dev          # mở http://localhost:3000
+npm run dev          # mở http://localhost:3000, rồi mở /thi-sinh và /giam-thi ở hai tab
 ```
 
-Mở `/thi-sinh` và `/giam-thi` ở hai tab để thử luồng cảnh báo trên một máy.
-Build EXE (Windows): `powershell -File scripts/build-exe.ps1`.
+Chạy như bản EXE (máy chủ LAN thật):
 
-## Nguyên tắc an toàn
+```bash
+cd web && npm run build
+cd ../desktop-hub && pip install -r requirements.txt
+python app_desktop.py            # Windows: mở cửa sổ ứng dụng
+python tests/serve_hub.py        # macOS/Linux: chỉ bật máy chủ, mở địa chỉ in ra bằng Chrome
+```
 
-- AI chỉ hỗ trợ quan sát, không tự kết luận vi phạm.
-- Video không được truyền liên tục đi đâu cả trong cấu hình mặc định; lưu ảnh cảnh báo mặc định tắt.
-- Bản LAN dành cho mạng nội bộ tin cậy; không mở cổng `8765` ra Internet.
-- Các ngưỡng hiện tại là ngưỡng kỹ thuật để trình diễn, cần hiệu chỉnh theo thực tế trước khi dùng thật.
+Build EXE (Windows, PowerShell): `powershell -ExecutionPolicy Bypass -File scripts/build-exe.ps1`.
+
+## Nguyên tắc an toàn và giới hạn
+
+- AI chỉ hỗ trợ quan sát, không tự kết luận vi phạm; thí sinh phải đồng ý trước khi webcam bật, không thu âm.
+- Video không được truyền đi trong cấu hình mặc định; lưu ảnh cảnh báo mặc định tắt.
+- Danh tính (họ tên, SBD, phòng, máy) do thí sinh khai báo để giám thị đối chiếu; **không nhận diện danh tính bằng khuôn mặt**.
+- Góc quay đầu, cúi/ngẩng, hướng mắt là **ước tính**; chất lượng phụ thuộc webcam, ánh sáng, tư thế.
+  Sản phẩm **không nhận diện điện thoại**; cúi đầu lâu có thể chỉ là đang viết nháp.
+- Bản LAN dành cho mạng nội bộ tin cậy, chưa có xác thực; không mở cổng `8765` ra Internet.
+- Ngưỡng hiện tại là ngưỡng thiết kế để trình diễn, cần hiệu chỉnh và thử với nhiều máy trước khi dùng thật.
