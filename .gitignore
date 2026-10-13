@@ -1,51 +1,30 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/.vinext/
-/out/
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# ---------- Web (Next.js) ----------
+/web/node_modules/
+/web/.next/
+/web/out/
+/web/coverage/
+/web/next-env.d.ts
+/web/.vercel/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local environment
-.env*
-!.env.example
-
-# deployment and generated files
-.vercel
-next-env.d.ts
-*.tsbuildinfo
-/dist/
-/.wrangler/
-/.vercel/
-/outputs/
-/work/
+# ---------- Desktop (Python / PyInstaller) ----------
+/desktop/build/
+/desktop/dist/
 __pycache__/
 *.py[cod]
+.venv/
 
-.vercel
-.env*
-/build/
+# ---------- Build output ----------
 /release/
-DU_AN_PYTHON/dist/
-DU_AN_PYTHON/ui/
-.tmp-docx/rendered*/
+
+# ---------- Secrets ----------
+.env*
+!.env.example
+*.pem
+
+# ---------- OS / editor ----------
+.DS_Store
