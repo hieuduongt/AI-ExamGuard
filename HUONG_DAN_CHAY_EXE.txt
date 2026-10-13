@@ -1,0 +1,74 @@
+AI EXAMGUARD - HƯỚNG DẪN CHẠY EXE TRÊN NHIỀU MÁY
+===================================================
+
+BẢN SỬA 2026.09.08.3: AI_ExamGuard_2026_09_08_3.exe
+Hãy dùng đúng bản này; bản EXE đang mở trước khi cập nhật không tự thay đổi.
+
+THỬ QUAY ĐẦU TRÊN MỘT MÁY
+--------------------------
+1) Mở khu vực Giám thị để lấy địa chỉ kết nối, rồi trở lại Thí sinh.
+2) Nhập thông tin, kiểm tra kết nối, cho phép webcam và bắt đầu.
+3) Chờ trạng thái AI đang phân tích. Camera có hình chưa đủ để xác nhận AI chạy.
+4) Bấm "Mở Giám thị ↗" để mở cửa sổ riêng. Không đóng hoặc thu nhỏ cửa sổ webcam;
+   đặt hai cửa sổ cạnh nhau khi thử. Chuyển trang trong cùng cửa sổ sẽ dừng camera.
+5) Quay mặt sang trái/phải rõ ràng và giữ vài giây. Xem "Tiến trình tạo cảnh báo":
+   mặc định quay đầu vượt ngưỡng đủ 3 giây quan sát; các nhiễu ngắn dưới 0,4 giây
+   không xóa ngay bộ đếm. Quay hoàn toàn khỏi camera có thể tạo "Không có mặt
+   trước máy" sau 5 giây thay vì "Quay đầu".
+6) Dòng "Giám thị đã nhận" chỉ xuất hiện sau khi máy giám thị xác nhận nhận cảnh báo.
+   Dashboard phải hiển thị đúng phòng, máy, họ tên và số báo danh.
+7) Nếu bộ đếm không tăng, kiểm tra chỉ số quay đầu và trạng thái AI; nếu có sự kiện
+   nhưng còn "Đang chờ gửi", kiểm tra địa chỉ/mạng. Máy giám thị hiển thị rõ khi
+   AI tạm dừng hoặc lỗi; không coi trạng thái kết nối mạng là AI đang hoạt động.
+
+Chỉ số góc là ước tính từ khuôn mặt, không phải phép đo góc chính xác.
+Cảnh báo chỉ là nghi vấn để giám thị kiểm tra, không tự động kết luận gian lận.
+
+Yêu cầu
+-------
+- Máy giáo viên và các máy học sinh dùng chung mạng LAN hoặc Wi-Fi.
+- Windows 10/11 có Microsoft Edge WebView2 (thường đã được cài sẵn).
+- Nếu Windows Firewall hỏi, chọn Allow access/Cho phép trên mạng Private.
+
+1. Trên máy giáo viên
+---------------------
+1) Chạy AI_ExamGuard_Portable.exe.
+2) Chọn "Vào phòng giám thị".
+3) Dashboard hiển thị "Địa chỉ kết nối dành cho máy thí sinh", ví dụ:
+   http://192.168.1.10:8765
+4) Sao chép và gửi địa chỉ này cho các máy học sinh.
+5) Giữ ứng dụng mở trong suốt ca thi.
+
+2. Trên mỗi máy học sinh
+-----------------------
+1) Chạy cùng file AI_ExamGuard_Portable.exe.
+2) Chọn "Bắt đầu kiểm tra thiết bị".
+3) Nhập đầy đủ:
+   - Họ và tên
+   - Số báo danh
+   - Mã phòng thi
+   - Số máy/vị trí
+4) Nhập địa chỉ máy giám thị và bấm "Kiểm tra kết nối".
+5) Chỉ khi xuất hiện "Đã kết nối với máy giám thị" mới bắt đầu giám sát.
+
+3. Khi có dấu hiệu bất thường
+-----------------------------
+- Dashboard giáo viên hiển thị rõ phòng, số máy, họ tên và số báo danh.
+- Máy chuyển màu vàng/đỏ và có dải "Cảnh báo mới cần kiểm tra".
+- Giáo viên mở chi tiết rồi đánh dấu đã xác minh.
+- AI chỉ phát hiện dấu hiệu nghi vấn; giáo viên là người kết luận theo quy chế.
+
+Xử lý khi không kết nối được
+----------------------------
+- Kiểm tra tất cả máy đang dùng cùng mạng.
+- Kiểm tra đúng địa chỉ và cổng đang hiển thị (có thể khác 8765 nếu mở nhiều EXE).
+- Cho phép AI ExamGuard qua Windows Firewall trên mạng Private.
+- Tắt VPN hoặc mạng khách/Guest Wi-Fi có chế độ chặn các thiết bị nhìn thấy nhau.
+- Không đóng ứng dụng trên máy giáo viên.
+
+Lưu ý an toàn
+-------------
+- Bản LAN này dành cho mạng nội bộ tin cậy; không mở cổng 8765 ra Internet.
+- Video webcam được xử lý tại máy học sinh, không truyền liên tục về máy giáo viên.
+- Dữ liệu cảnh báo của trung tâm nằm trong bộ nhớ và bị xóa khi đóng EXE giáo viên;
+  hãy bấm "Xuất báo cáo" trước khi kết thúc ca thi.

@@ -13,9 +13,23 @@ import {
 import { getFirebaseDb, hasFirebaseConfig } from '@/lib/firebase-client';
 import type { ExamEvent, StationStatus, VisionMetrics } from '@/lib/exam-types';
 
-const EVENT_KEY = 'examguard:events:v1';
-const STATION_KEY = 'examguard:stations:v1';
-const CHANNEL = 'examguard:live:v1';
+const EVENT_KEY = 'examguard:events:v2';
+const STATION_KEY = 'examguard:stations:v2';
+const HUB_KEY = 'examguard:teacher-hub:v1';
+const CHANNEL = 'examguard:live:v2';
+const OUTBOX_KEY = 'examguard:outbox:v1';
+const HUB_TIMEOUT_MS = 3500;
+type PendingEvent = { hubUrl: string; event: ExamEvent };
+let flushing: Promise<void> | null = null;
+
+export interface HubRuntime {
+  ok: boolean;
+  port: number;
+  hubUrl: string;
+  version?: string;
+}
+
+export type HubStatus = 'connected' | 'disconnected';
 
 function safeParse<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
@@ -39,6 +53,126 @@ function postMessage(payload: unknown) {
   channel.close();
 }
 
+function emitHubStatus(status: HubStatus) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('examguard-hub-status', { detail: status }));
+}
+
+async function fetchWithTimeout(url: string, init?: RequestInit) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), HUB_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal, cache: 'no-store' });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+export function normalizeHubUrl(value: string) {
+  const raw = value.trim().replace(/\/+$/, '');
+  if (!raw) return '';
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `http://${raw}`);
+    if (!url.port && url.protocol === 'http:') url.port = '8765';
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return '';
+  }
+}
+
+export function getConfiguredHubUrl() {
+  if (typeof window === 'undefined') return '';
+  return normalizeHubUrl(localStorage.getItem(HUB_KEY) ?? '');
+}
+
+export function setConfiguredHubUrl(value: string) {
+  const normalized = normalizeHubUrl(value);
+  if (typeof window !== 'undefined') {
+    if (normalized) localStorage.setItem(HUB_KEY, normalized);
+    else localStorage.removeItem(HUB_KEY);
+  }
+  return normalized;
+}
+
+function activeHubUrl() {
+  if (typeof window === 'undefined') return '';
+  const configured = getConfiguredHubUrl();
+  if (configured) return configured;
+  return hasFirebaseConfig ? '' : window.location.origin;
+}
+
+export async function testHubConnection(value: string) {
+  const hubUrl = normalizeHubUrl(value);
+  if (!hubUrl) return { ok: false, hubUrl: '', message: 'Địa chỉ máy giám thị không hợp lệ.' };
+  try {
+    const response = await fetchWithTimeout(`${hubUrl}/api/health`);
+    const payload = await response.json() as { ok?: boolean };
+    if (!response.ok || !payload.ok) throw new Error('Máy giám thị không phản hồi.');
+    setConfiguredHubUrl(hubUrl);
+    emitHubStatus('connected');
+    void flushPendingEvents();
+    return { ok: true, hubUrl, message: 'Đã kết nối với máy giám thị.' };
+  } catch {
+    emitHubStatus('disconnected');
+    return { ok: false, hubUrl, message: 'Không kết nối được. Hãy kiểm tra địa chỉ, Wi-Fi/LAN và tường lửa Windows.' };
+  }
+}
+
+export async function getDesktopRuntime(): Promise<HubRuntime | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const response = await fetchWithTimeout(`${window.location.origin}/api/runtime`);
+    if (!response.ok) return null;
+    const payload = await response.json() as HubRuntime;
+    return payload.ok && payload.hubUrl ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+async function postToHub(path: string, payload: unknown, method = 'POST', hubUrl = activeHubUrl()) {
+  if (!hubUrl) return false;
+  try {
+    const response = await fetchWithTimeout(`${hubUrl}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('LAN hub rejected the request');
+    emitHubStatus('connected');
+    return true;
+  } catch {
+    emitHubStatus('disconnected');
+    return false;
+  }
+}
+
+export function getPendingEventCount() {
+  if (typeof window === 'undefined') return 0;
+  return safeParse<PendingEvent[]>(localStorage.getItem(OUTBOX_KEY), []).length;
+}
+
+export function flushPendingEvents(): Promise<void> {
+  if (flushing) return flushing;
+  flushing = (async () => {
+    const queue = safeParse<PendingEvent[]>(localStorage.getItem(OUTBOX_KEY), []);
+    const unavailableHubs = new Set<string>();
+    for (const item of queue) {
+      if (unavailableHubs.has(item.hubUrl)) continue;
+      if (!await postToHub('/api/events', item.event, 'POST', item.hubUrl)) {
+        unavailableHubs.add(item.hubUrl);
+        continue;
+      }
+      // Re-read: another event may have been queued during the request.
+      const remaining = safeParse<PendingEvent[]>(localStorage.getItem(OUTBOX_KEY), [])
+        .filter((pending) => pending.event.id !== item.event.id || pending.hubUrl !== item.hubUrl);
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
+      window.dispatchEvent(new CustomEvent('examguard-delivery', { detail: { id: item.event.id, delivered: true } }));
+    }
+  })().finally(() => { flushing = null; });
+  return flushing;
+}
+
 export function makeId(prefix = 'event') {
   const suffix = typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
@@ -48,28 +182,38 @@ export function makeId(prefix = 'event') {
 
 export function publishEvent(event: ExamEvent) {
   if (typeof window === 'undefined') return;
-  const next = [event, ...localEvents().filter((item) => item.id !== event.id)].slice(0, 150);
+  const next = [event, ...localEvents().filter((item) => item.id !== event.id)].slice(0, 500);
   localStorage.setItem(EVENT_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent('examguard-events'));
   postMessage({ kind: 'event', event });
+  const hubUrl = activeHubUrl();
+  if (hubUrl) {
+    const pending = safeParse<PendingEvent[]>(localStorage.getItem(OUTBOX_KEY), []);
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify([...pending.filter((item) => item.event.id !== event.id), { hubUrl, event }]));
+    void flushPendingEvents();
+  }
 
   const db = getFirebaseDb();
-  if (db) {
-    void setDoc(doc(db, 'examEvents', event.id), event).catch(() => undefined);
-  }
+  if (db) void setDoc(doc(db, 'examEvents', event.id), event).then(() => {
+    window.dispatchEvent(new CustomEvent('examguard-delivery', { detail: { id: event.id, delivered: true } }));
+  }).catch(() => emitHubStatus('disconnected'));
 }
 
 export function publishStation(station: StationStatus) {
   if (typeof window === 'undefined') return;
   const stations = localStations();
-  const next = [station, ...stations.filter((item) => item.stationId !== station.stationId)].slice(0, 80);
+  const key = `${station.roomId}::${station.stationId}`;
+  const next = [station, ...stations.filter((item) => `${item.roomId}::${item.stationId}` !== key)].slice(0, 150);
   localStorage.setItem(STATION_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent('examguard-stations'));
   postMessage({ kind: 'station', station });
+  void postToHub('/api/stations', station);
+  void flushPendingEvents();
 
   const db = getFirebaseDb();
   if (db) {
-    void setDoc(doc(db, 'examStations', station.stationId), station).catch(() => undefined);
+    const documentId = `${station.roomId}__${station.stationId}`.replaceAll('/', '_');
+    void setDoc(doc(db, 'examStations', documentId), station).catch(() => undefined);
   }
 }
 
@@ -79,19 +223,18 @@ export function markEventReviewed(id: string, reviewed = true) {
   localStorage.setItem(EVENT_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent('examguard-events'));
   postMessage({ kind: 'review', id, reviewed });
+  void postToHub(`/api/events/${encodeURIComponent(id)}`, { reviewed }, 'PATCH');
   const db = getFirebaseDb();
   if (db) void updateDoc(doc(db, 'examEvents', id), { reviewed }).catch(() => undefined);
 }
-
-export function getEventSnapshot() { return localEvents(); }
-export function getStationSnapshot() { return localStations(); }
 
 export function subscribeExamData(
   onEvents: (events: ExamEvent[]) => void,
   onStations: (stations: StationStatus[]) => void,
 ) {
-  const refreshEvents = () => onEvents(localEvents());
-  const refreshStations = () => onStations(localStations());
+  let authoritative = false;
+  const refreshEvents = () => { if (!authoritative) onEvents(localEvents()); };
+  const refreshStations = () => { if (!authoritative) onStations(localStations()); };
   refreshEvents();
   refreshStations();
 
@@ -105,17 +248,42 @@ export function subscribeExamData(
   const firebaseUnsubs: Array<() => void> = [];
   const db = getFirebaseDb();
   if (db) {
-    firebaseUnsubs.push(onSnapshot(query(collection(db, 'examEvents'), orderBy('timestamp', 'desc'), limit(150)), (snapshot) => {
-      const remote = snapshot.docs.map((item) => item.data() as ExamEvent);
-      if (remote.length) onEvents(remote);
+    firebaseUnsubs.push(onSnapshot(query(collection(db, 'examEvents'), orderBy('timestamp', 'desc'), limit(500)), (snapshot) => {
+      authoritative = true;
+      onEvents(snapshot.docs.map((item) => item.data() as ExamEvent));
     }, () => undefined));
     firebaseUnsubs.push(onSnapshot(collection(db, 'examStations'), (snapshot) => {
-      const remote = snapshot.docs.map((item) => item.data() as StationStatus);
-      if (remote.length) onStations(remote);
+      onStations(snapshot.docs.map((item) => item.data() as StationStatus));
     }, () => undefined));
   }
 
+  let stopped = false;
+  let polling = false;
+  const pollHub = async () => {
+    const hubUrl = activeHubUrl();
+    if (!hubUrl || stopped || polling) return;
+    polling = true;
+    try {
+      const response = await fetchWithTimeout(`${hubUrl}/api/snapshot`);
+      if (!response.ok) throw new Error('LAN hub unavailable');
+      const payload = await response.json() as { events?: ExamEvent[]; stations?: StationStatus[] };
+      if (stopped) return;
+      authoritative = true;
+      onEvents(Array.isArray(payload.events) ? payload.events : []);
+      onStations(Array.isArray(payload.stations) ? payload.stations : []);
+      emitHubStatus('connected');
+    } catch {
+      if (!stopped) emitHubStatus('disconnected');
+    } finally {
+      polling = false;
+    }
+  };
+  void pollHub();
+  const hubTimer = window.setInterval(() => void pollHub(), 1000);
+
   return () => {
+    stopped = true;
+    window.clearInterval(hubTimer);
     channel?.removeEventListener('message', onChannel);
     channel?.close();
     window.removeEventListener('storage', onChannel);
@@ -134,6 +302,7 @@ export function demoStations(): StationStatus[] {
     return {
       stationId,
       roomId: 'PHONG-01',
+      candidateId: `SBD${String(index + 1).padStart(3, '0')}`,
       candidateName: `Thí sinh ${String(index + 1).padStart(2, '0')}`,
       state: stationId === 'PC-03' ? 'critical' : warning.has(stationId) ? 'warning' : 'normal',
       lastSeen: Date.now() - index * 950,
@@ -141,21 +310,6 @@ export function demoStations(): StationStatus[] {
       alertCount: stationId === 'PC-03' ? 3 : warning.has(stationId) ? 1 : 0,
     };
   });
-}
-
-export function seedDemoData() {
-  if (typeof window === 'undefined') return;
-  if (!localStorage.getItem(STATION_KEY)) localStorage.setItem(STATION_KEY, JSON.stringify(demoStations()));
-  if (!localStorage.getItem(EVENT_KEY)) {
-    const base = Date.now();
-    const events: ExamEvent[] = [
-      { id: 'demo-1', roomId: 'PHONG-01', stationId: 'PC-07', candidateName: 'Thí sinh 07', type: 'head_turn', severity: 'warning', title: 'Quay đầu phải kéo dài', detail: 'Góc quay đầu 28°, duy trì 5,2 giây.', timestamp: base - 42_000, reviewed: false, source: 'demo' },
-      { id: 'demo-2', roomId: 'PHONG-01', stationId: 'PC-12', candidateName: 'Thí sinh 12', type: 'gaze_away', severity: 'info', title: 'Hướng mắt lệch phải', detail: 'Hướng mắt rời vùng màn hình trong 6,1 giây.', timestamp: base - 93_000, reviewed: false, source: 'demo' },
-      { id: 'demo-3', roomId: 'PHONG-01', stationId: 'PC-03', candidateName: 'Thí sinh 03', type: 'no_face', severity: 'critical', title: 'Không có mặt trước máy', detail: 'Không phát hiện khuôn mặt trong 8,4 giây.', timestamp: base - 135_000, reviewed: false, source: 'demo' },
-      { id: 'demo-4', roomId: 'PHONG-01', stationId: 'PC-09', candidateName: 'Thí sinh 09', type: 'focus_lost', severity: 'warning', title: 'Rời khỏi cửa sổ bài thi', detail: 'Cửa sổ bài thi mất tiêu điểm trong 3,7 giây.', timestamp: base - 310_000, reviewed: true, source: 'demo' },
-    ];
-    localStorage.setItem(EVENT_KEY, JSON.stringify(events));
-  }
 }
 
 export { hasFirebaseConfig };

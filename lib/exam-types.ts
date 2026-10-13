@@ -24,6 +24,7 @@ export interface ExamEvent {
   id: string;
   roomId: string;
   stationId: string;
+  candidateId: string;
   candidateName: string;
   type: AlertType;
   severity: AlertSeverity;
@@ -37,9 +38,15 @@ export interface ExamEvent {
 export interface StationStatus {
   stationId: string;
   roomId: string;
+  candidateId: string;
   candidateName: string;
   state: StationState;
   lastSeen: number;
+  serverSeenAt?: number;
+  analysisState?: 'loading' | 'ready' | 'stalled' | 'error' | 'stopped';
+  analysisMessage?: string;
+  lastAnalyzedAt?: number;
+  behaviorProgress?: Array<{ type: AlertType; elapsedSeconds: number; requiredSeconds: number }>;
   metrics: VisionMetrics;
   alertCount: number;
 }
@@ -55,12 +62,12 @@ export interface BehaviorThresholds {
 export const DEFAULT_THRESHOLDS: BehaviorThresholds = {
   noFaceSeconds: 5,
   multipleFacesSeconds: 2,
-  headTurnSeconds: 4,
+  headTurnSeconds: 3,
   gazeAwaySeconds: 5,
   cooldownSeconds: 12,
 };
 
-export const SETTINGS_STORAGE_KEY = 'examguard:settings:v1';
+export const SETTINGS_STORAGE_KEY = 'examguard:settings:v2';
 
 export const ALERT_LABELS: Record<AlertType, string> = {
   no_face: 'Không có mặt trước máy',

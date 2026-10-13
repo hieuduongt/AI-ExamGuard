@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   BrainCircuit,
+  Cable,
   Check,
   CheckCircle2,
   CircleGauge,
@@ -19,6 +20,8 @@ import {
   ShieldCheck,
   Square,
   UserRound,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { ExamGuardHeader } from '@/components/examguard-header';
 import { Badge } from '@/components/ui/badge';
@@ -27,14 +30,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
+import { BehaviorEngine, behaviorDetail, VISION_LIMITS, type BehaviorProgress } from '@/lib/behavior-engine';
 import { ALERT_LABELS, DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY, type AlertType, type BehaviorThresholds, type ExamEvent, type VisionMetrics } from '@/lib/exam-types';
-import { makeId, publishEvent, publishStation } from '@/lib/exam-store';
+import {
+  getConfiguredHubUrl,
+  getPendingEventCount,
+  hasFirebaseConfig,
+  makeId,
+  publishEvent,
+  publishStation,
+  testHubConnection,
+} from '@/lib/exam-store';
 
 type ModelState = 'idle' | 'loading' | 'ready' | 'camera-only' | 'error';
-type ActiveTimer = Partial<Record<AlertType, number>>;
+type HubState = 'unchecked' | 'checking' | 'connected' | 'disconnected';
 type CooldownTimer = Partial<Record<AlertType, number>>;
 
 const initialMetrics: VisionMetrics = { faceCount: 0, gazeX: 0, gazeY: 0, headYaw: 0, headPitch: 0, fps: 0 };
+const { headYaw: HEAD_YAW_ALERT_DEGREES, headPitch: HEAD_PITCH_ALERT_DEGREES, gazeX: GAZE_X_ALERT_RATIO, gazeY: GAZE_Y_ALERT_RATIO } = VISION_LIMITS;
 
 function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
@@ -130,9 +143,13 @@ function drawOverlay(canvas: HTMLCanvasElement, result: FaceLandmarkerResult) {
 }
 
 export default function CandidatePage() {
-  const [candidateName, setCandidateName] = useState('Nguyễn Minh Anh');
-  const [stationId, setStationId] = useState('PC-01');
+  const [candidateName, setCandidateName] = useState('');
+  const [candidateId, setCandidateId] = useState('');
+  const [stationId, setStationId] = useState('');
   const [roomId, setRoomId] = useState('PHONG-01');
+  const [hubAddress, setHubAddress] = useState(() => getConfiguredHubUrl());
+  const [hubState, setHubState] = useState<HubState>(hasFirebaseConfig ? 'connected' : 'unchecked');
+  const [hubMessage, setHubMessage] = useState(hasFirebaseConfig ? 'Đang đồng bộ qua Firebase.' : 'Nhập địa chỉ hiển thị trên máy giám thị.');
   const [consented, setConsented] = useState(true);
   const [running, setRunning] = useState(false);
   const [modelState, setModelState] = useState<ModelState>('idle');
@@ -141,6 +158,11 @@ export default function CandidatePage() {
   const [recentEvents, setRecentEvents] = useState<ExamEvent[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [lowPowerMode, setLowPowerMode] = useState(false);
+  const [behaviorProgress, setBehaviorProgress] = useState<BehaviorProgress[]>([]);
+  const [deliveredIds, setDeliveredIds] = useState<string[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [activeThresholds, setActiveThresholds] = useState(DEFAULT_THRESHOLDS);
+  const [analysisStalled, setAnalysisStalled] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -149,31 +171,71 @@ export default function CandidatePage() {
   const animationRef = useRef(0);
   const detectionLoopRef = useRef<() => void>(() => undefined);
   const runningRef = useRef(false);
-  const identityRef = useRef({ candidateName, stationId, roomId });
+  const identityRef = useRef({ candidateName, candidateId, stationId, roomId });
   const metricsRef = useRef(initialMetrics);
-  const activeTimersRef = useRef<ActiveTimer>({});
+  const engineRef = useRef(new BehaviorEngine());
+  const progressRef = useRef<BehaviorProgress[]>([]);
+  const lastAnalyzedRef = useRef(0);
+  const lastVideoTimeRef = useRef(-1);
+  const modelStateRef = useRef<ModelState>('idle');
+  const analysisErrorRef = useRef('');
+  const sessionRef = useRef(0);
   const cooldownsRef = useRef<CooldownTimer>({});
   const lastFrameRef = useRef({ timestamp: 0, frameCount: 0, fpsStarted: 0, fps: 0 });
   const alertCountRef = useRef(0);
   const thresholdsRef = useRef<BehaviorThresholds>(DEFAULT_THRESHOLDS);
 
-  useEffect(() => { identityRef.current = { candidateName, stationId, roomId }; }, [candidateName, roomId, stationId]);
+  useEffect(() => { identityRef.current = { candidateName, candidateId, stationId, roomId }; }, [candidateId, candidateName, roomId, stationId]);
+
+  useEffect(() => {
+    const onDelivery = (event: Event) => {
+      const { id } = (event as CustomEvent<{ id: string }>).detail;
+      setDeliveredIds((items) => [...items.filter((item) => item !== id), id].slice(-500));
+      setPendingCount(getPendingEventCount());
+    };
+    window.addEventListener('examguard-delivery', onDelivery);
+    return () => window.removeEventListener('examguard-delivery', onDelivery);
+  }, []);
+
+  useEffect(() => {
+    if (hasFirebaseConfig) return;
+    const savedAddress = getConfiguredHubUrl();
+    if (!savedAddress) return;
+    void testHubConnection(savedAddress).then((result) => {
+      setHubAddress(result.hubUrl || savedAddress);
+      setHubState(result.ok ? 'connected' : 'disconnected');
+      setHubMessage(result.message);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (hasFirebaseConfig) return;
+    const onHubStatus = (event: Event) => {
+      const status = (event as CustomEvent<'connected' | 'disconnected'>).detail;
+      setHubState(status);
+      setHubMessage(status === 'connected'
+        ? 'Đang gửi trạng thái tới máy giám thị.'
+        : 'Mất kết nối máy giám thị. Hãy kiểm tra mạng LAN/Wi-Fi.');
+    };
+    window.addEventListener('examguard-hub-status', onHubStatus);
+    return () => window.removeEventListener('examguard-hub-status', onHubStatus);
+  }, []);
 
   const health = useMemo(() => {
     if (!running) return 'idle';
-    if (metrics.faceCount === 0) return 'critical';
-    if (metrics.faceCount > 1 || Math.abs(metrics.headYaw) > 22 || Math.abs(metrics.gazeX) > 0.55) return 'warning';
+    if (metrics.faceCount === 0 || metrics.faceCount > 1) return 'critical';
+    if (Math.abs(metrics.headYaw) > HEAD_YAW_ALERT_DEGREES || Math.abs(metrics.headPitch) > HEAD_PITCH_ALERT_DEGREES || Math.abs(metrics.gazeX) > GAZE_X_ALERT_RATIO || Math.abs(metrics.gazeY) > GAZE_Y_ALERT_RATIO) return 'warning';
     return 'normal';
   }, [metrics, running]);
 
   const emitAlert = useCallback((type: AlertType, detail: string, source: ExamEvent['source'] = 'ai') => {
     const now = Date.now();
     const lastSent = cooldownsRef.current[type] ?? 0;
-    if (now - lastSent < thresholdsRef.current.cooldownSeconds * 1000) return;
-    cooldownsRef.current[type] = now;
+    if (source !== 'demo' && now - lastSent < thresholdsRef.current.cooldownSeconds * 1000) return;
+    if (source !== 'demo') cooldownsRef.current[type] = now;
     alertCountRef.current += 1;
     const identity = identityRef.current;
-    const severity = type === 'no_face' || type === 'multiple_faces' ? 'critical' : type === 'gaze_away' ? 'info' : 'warning';
+    const severity = type === 'no_face' || type === 'multiple_faces' ? 'critical' : 'warning';
     const event: ExamEvent = {
       id: makeId(),
       ...identity,
@@ -186,37 +248,37 @@ export default function CandidatePage() {
       source,
     };
     publishEvent(event);
+    setPendingCount(getPendingEventCount());
     setRecentEvents((events) => [event, ...events].slice(0, 6));
   }, []);
 
   const evaluateBehavior = useCallback((nextMetrics: VisionMetrics, now: number) => {
-    const thresholds = thresholdsRef.current;
-    const conditions: Array<[AlertType, boolean, number, string]> = [
-      ['no_face', nextMetrics.faceCount === 0, thresholds.noFaceSeconds, `Không phát hiện khuôn mặt trong ${thresholds.noFaceSeconds} giây.`],
-      ['multiple_faces', nextMetrics.faceCount > 1, thresholds.multipleFacesSeconds, `Phát hiện ${nextMetrics.faceCount} khuôn mặt trong khung hình.`],
-      ['head_turn', Math.abs(nextMetrics.headYaw) > 22, thresholds.headTurnSeconds, `Góc quay đầu ước tính ${Math.abs(nextMetrics.headYaw).toFixed(0)}°.`],
-      ['head_pose', Math.abs(nextMetrics.headPitch) > 20, thresholds.headTurnSeconds, `Góc cúi/ngẩng ước tính ${Math.abs(nextMetrics.headPitch).toFixed(0)}°.`],
-      ['gaze_away', Math.abs(nextMetrics.gazeX) > 0.55 || Math.abs(nextMetrics.gazeY) > 0.7, thresholds.gazeAwaySeconds, 'Hướng mắt rời vùng màn hình trong thời gian kéo dài.'],
-    ];
-
-    conditions.forEach(([type, active, seconds, detail]) => {
-      if (!active) { delete activeTimersRef.current[type]; return; }
-      activeTimersRef.current[type] ??= now;
-      if (now - (activeTimersRef.current[type] ?? now) >= seconds * 1000) {
-        emitAlert(type, detail);
-        activeTimersRef.current[type] = now;
-      }
-    });
+    const result = engineRef.current.update(nextMetrics, now, thresholdsRef.current);
+    progressRef.current = result.progress;
+    setBehaviorProgress(result.progress);
+    for (const item of result.triggered) emitAlert(item.type, behaviorDetail(item, nextMetrics));
   }, [emitAlert]);
 
   const updateStation = useCallback((nextMetrics: VisionMetrics) => {
     const identity = identityRef.current;
-    const state = nextMetrics.faceCount === 0 || nextMetrics.faceCount > 1
+    const fresh = lastAnalyzedRef.current > 0 && Date.now() - lastAnalyzedRef.current < 3000;
+    const analysisState = modelStateRef.current === 'ready' ? (fresh ? 'ready' : 'stalled')
+      : modelStateRef.current === 'loading' ? 'loading' : 'error';
+    setAnalysisStalled(analysisState === 'stalled');
+    const state = analysisState !== 'ready' ? 'warning' : nextMetrics.faceCount === 0 || nextMetrics.faceCount > 1
       ? 'critical'
-      : Math.abs(nextMetrics.headYaw) > 22 || Math.abs(nextMetrics.gazeX) > 0.55
+      : Math.abs(nextMetrics.headYaw) > HEAD_YAW_ALERT_DEGREES || Math.abs(nextMetrics.headPitch) > HEAD_PITCH_ALERT_DEGREES || Math.abs(nextMetrics.gazeX) > GAZE_X_ALERT_RATIO || Math.abs(nextMetrics.gazeY) > GAZE_Y_ALERT_RATIO
         ? 'warning'
         : 'normal';
-    publishStation({ ...identity, state, metrics: nextMetrics, lastSeen: Date.now(), alertCount: alertCountRef.current });
+    publishStation({ ...identity, state, metrics: nextMetrics, lastSeen: Date.now(), alertCount: alertCountRef.current,
+      analysisState, lastAnalyzedAt: lastAnalyzedRef.current, behaviorProgress: fresh ? progressRef.current : [],
+      analysisMessage: analysisState === 'stalled' ? 'Camera không có khung hình AI mới' : analysisErrorRef.current,
+    });
+    if (analysisState === 'stalled') {
+      setStatusText('Phân tích đang tạm dừng — kiểm tra webcam hoặc dừng rồi bắt đầu lại');
+      setBehaviorProgress([]);
+    }
+    setPendingCount(getPendingEventCount());
   }, []);
 
   const detectionLoop = useCallback(() => {
@@ -227,7 +289,7 @@ export default function CandidatePage() {
     const now = performance.now();
     const frameInterval = lowPowerMode ? 160 : 80;
 
-    if (video && canvas && landmarker && video.readyState >= 2 && now - lastFrameRef.current.timestamp >= frameInterval) {
+    if (video && canvas && landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTimeRef.current) {
       lastFrameRef.current.timestamp = now;
       if (!lastFrameRef.current.fpsStarted) lastFrameRef.current.fpsStarted = now;
       lastFrameRef.current.frameCount += 1;
@@ -238,34 +300,46 @@ export default function CandidatePage() {
       }
       try {
         const result = landmarker.detectForVideo(video, now);
+        lastVideoTimeRef.current = video.currentTime;
         canvas.width = video.videoWidth || 1280;
         canvas.height = video.videoHeight || 720;
         drawOverlay(canvas, result);
         const nextMetrics = calculateMetrics(result, lastFrameRef.current.fps);
         metricsRef.current = nextMetrics;
+        lastAnalyzedRef.current = Date.now();
+        analysisErrorRef.current = '';
+        setErrorMessage('');
+        setStatusText('AI đang phân tích cục bộ trên thiết bị');
         setMetrics(nextMetrics);
         evaluateBehavior(nextMetrics, Date.now());
-      } catch {
-        setStatusText('Đang khôi phục bộ phân tích hình ảnh…');
+      } catch (error) {
+        analysisErrorRef.current = error instanceof Error ? error.message : 'Không phân tích được khung hình';
+        setErrorMessage(`AI gặp lỗi: ${analysisErrorRef.current}`);
+        setStatusText('AI gặp lỗi — chưa thể phát hiện hành vi');
       }
     }
-    animationRef.current = requestAnimationFrame(() => detectionLoopRef.current());
+    animationRef.current = window.setTimeout(() => detectionLoopRef.current(), frameInterval);
   }, [evaluateBehavior, lowPowerMode]);
 
   useEffect(() => { detectionLoopRef.current = detectionLoop; }, [detectionLoop]);
 
   const stopMonitoring = useCallback(() => {
+    const wasRunning = runningRef.current;
+    sessionRef.current += 1;
     runningRef.current = false;
-    cancelAnimationFrame(animationRef.current);
+    window.clearTimeout(animationRef.current);
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     landmarkerRef.current?.close();
     landmarkerRef.current = null;
+    modelStateRef.current = 'idle';
+    engineRef.current.reset();
+    progressRef.current = [];
     setRunning(false);
     setModelState('idle');
     setStatusText('Phiên giám sát đã dừng');
     const identity = identityRef.current;
-    publishStation({ ...identity, state: 'offline', metrics: metricsRef.current, lastSeen: Date.now(), alertCount: alertCountRef.current });
+    if (wasRunning) publishStation({ ...identity, state: 'offline', analysisState: 'stopped', analysisMessage: 'Phiên giám sát đã dừng', metrics: metricsRef.current, lastSeen: Date.now(), alertCount: alertCountRef.current });
   }, []);
 
   useEffect(() => () => stopMonitoring(), [stopMonitoring]);
@@ -294,55 +368,109 @@ export default function CandidatePage() {
   }, [running, updateStation]);
 
   async function startMonitoring() {
-    if (!consented) return;
+    if (!consented || modelStateRef.current === 'loading') return;
+    if (!hasFirebaseConfig && hubState !== 'connected') {
+      setErrorMessage('Bạn phải kết nối thành công với máy giám thị trước khi bắt đầu.');
+      return;
+    }
+    const identity = {
+      candidateName: candidateName.trim(),
+      candidateId: candidateId.trim().toUpperCase(),
+      roomId: roomId.trim().toUpperCase(),
+      stationId: stationId.trim().toUpperCase(),
+    };
+    identityRef.current = identity;
+    const session = ++sessionRef.current;
+    engineRef.current.reset();
+    progressRef.current = [];
+    cooldownsRef.current = {};
+    lastAnalyzedRef.current = 0;
+    lastVideoTimeRef.current = -1;
+    lastFrameRef.current = { timestamp: 0, frameCount: 0, fpsStarted: 0, fps: 0 };
+    metricsRef.current = initialMetrics;
+    analysisErrorRef.current = '';
+    setBehaviorProgress([]);
+    setAnalysisStalled(false);
+    setMetrics(initialMetrics);
+    setCandidateName(identity.candidateName);
+    setCandidateId(identity.candidateId);
+    setRoomId(identity.roomId);
+    setStationId(identity.stationId);
+    thresholdsRef.current = { ...DEFAULT_THRESHOLDS };
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings) as { thresholds?: BehaviorThresholds };
-        thresholdsRef.current = parsed.thresholds ?? DEFAULT_THRESHOLDS;
+        thresholdsRef.current = { ...DEFAULT_THRESHOLDS };
+        for (const key of Object.keys(DEFAULT_THRESHOLDS) as Array<keyof BehaviorThresholds>) {
+          const value = parsed.thresholds?.[key];
+          if (typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 60) thresholdsRef.current[key] = value;
+        }
       } catch { thresholdsRef.current = DEFAULT_THRESHOLDS; }
     }
+    setActiveThresholds(thresholdsRef.current);
     setErrorMessage('');
     setModelState('loading');
+    modelStateRef.current = 'loading';
     setStatusText('Đang xin quyền sử dụng webcam…');
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Trình duyệt này không hỗ trợ truy cập webcam. Hãy dùng phiên bản Chrome hoặc Edge mới nhất.');
       }
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 }, facingMode: 'user' }, audio: false });
+      if (session !== sessionRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
       streamRef.current = stream;
       if (!videoRef.current) throw new Error('Không tìm thấy vùng hiển thị camera.');
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
+      if (session !== sessionRef.current) return;
       setRunning(true);
       runningRef.current = true;
       setStatusText('Đang tải mô hình nhận diện khuôn mặt…');
 
       try {
         const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-        const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
-        landmarkerRef.current = await FaceLandmarker.createFromOptions(fileset, {
-          baseOptions: {
-            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-            delegate: 'GPU',
-          },
-          runningMode: 'VIDEO',
-          numFaces: 2,
-          minFaceDetectionConfidence: 0.55,
-          minFacePresenceConfidence: 0.55,
-          minTrackingConfidence: 0.5,
-          outputFaceBlendshapes: false,
-          outputFacialTransformationMatrixes: false,
-        });
+        let fileset;
+        try {
+          fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm');
+        } catch {
+          fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
+        }
+
+        let detector: FaceLandmarker | null = null;
+        let modelError: unknown;
+        for (const modelAssetPath of ['/mediapipe/face_landmarker.task', 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task']) {
+          for (const delegate of ['GPU', 'CPU'] as const) {
+            if (session !== sessionRef.current) return;
+            try {
+              detector = await FaceLandmarker.createFromOptions(fileset, {
+                baseOptions: { modelAssetPath, delegate }, runningMode: 'VIDEO', numFaces: 2,
+                minFaceDetectionConfidence: 0.55, minFacePresenceConfidence: 0.55, minTrackingConfidence: 0.5,
+                outputFaceBlendshapes: false, outputFacialTransformationMatrixes: false,
+              });
+              break;
+            } catch (error) { modelError = error; }
+          }
+          if (detector) break;
+        }
+        if (!detector) throw modelError ?? new Error('Không tải được mô hình nhận diện');
+        if (session !== sessionRef.current) { detector.close(); return; }
+        landmarkerRef.current = detector;
+        modelStateRef.current = 'ready';
         setModelState('ready');
         setStatusText('AI đang phân tích cục bộ trên thiết bị');
-        animationRef.current = requestAnimationFrame(() => detectionLoopRef.current());
-      } catch {
+        detectionLoopRef.current();
+      } catch (error) {
+        if (session !== sessionRef.current) return;
+        modelStateRef.current = 'camera-only';
+        analysisErrorRef.current = error instanceof Error ? error.message : 'Không tải được mô hình MediaPipe';
         setModelState('camera-only');
         setStatusText('Camera hoạt động; mô hình AI chưa tải được');
-        setErrorMessage('Không tải được mô hình MediaPipe. Kiểm tra kết nối mạng; video vẫn chỉ hiển thị cục bộ và chưa gửi đi.');
+        setErrorMessage(`Chưa có AI nhận diện. ${analysisErrorRef.current}`);
       }
     } catch (error) {
+      if (session !== sessionRef.current) return;
+      modelStateRef.current = 'error';
       setModelState('error');
       setRunning(false);
       runningRef.current = false;
@@ -357,32 +485,49 @@ export default function CandidatePage() {
     emitAlert(type, 'Sự kiện thử do thí sinh tạo để kiểm tra đường truyền.', 'demo');
   }
 
+  async function connectTeacherHub() {
+    setHubState('checking');
+    setHubMessage('Đang kiểm tra kết nối…');
+    const result = await testHubConnection(hubAddress);
+    setHubAddress(result.hubUrl || hubAddress);
+    setHubState(result.ok ? 'connected' : 'disconnected');
+    setHubMessage(result.message);
+  }
+
   const statusTone = health === 'critical' ? 'bg-rose-500' : health === 'warning' ? 'bg-amber-400' : running ? 'bg-emerald-500' : 'bg-slate-400';
 
   return (
     <main className="min-h-screen bg-[#f3f6fb] text-slate-900">
-      <ExamGuardHeader active="candidate" />
+      <ExamGuardHeader active="candidate" monitoring={running || modelState === 'loading'} />
       <div className="mx-auto w-[min(1260px,calc(100%-28px))] py-7 sm:py-9">
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div><Badge className="mb-3 bg-blue-100 text-blue-700">KHU VỰC THÍ SINH</Badge><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Kiểm tra thiết bị & bắt đầu giám sát</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Webcam được phân tích ngay trên máy này. Hệ thống chỉ gửi chỉ số trạng thái và sự kiện cần chú ý.</p></div>
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><span className={`size-2.5 rounded-full ${statusTone} ${running ? 'animate-pulse' : ''}`} /><div><small className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Trạng thái</small><b className="text-xs">{statusText}</b></div></div>
         </div>
 
+        {running && <div className="mb-5 space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          <p>Để kiểm tra trên cùng máy, bấm <b>Mở Giám thị ↗</b> ở phía trên. Webcam sẽ tiếp tục chạy ở cửa sổ này.</p>
+          <p>{pendingCount > 0 ? `${pendingCount} cảnh báo đang chờ gửi lại. Hãy giữ ứng dụng mở.` : 'Cảnh báo sẽ ghi “Giám thị đã nhận” sau khi máy giám thị xác nhận.'}</p>
+        </div>}
+        {running && errorMessage && <p role="alert" className="mb-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-800">{errorMessage}</p>}
+
         <div className={`grid gap-5 lg:grid-cols-[1.05fr_.95fr] ${running ? 'hidden' : ''}`}>
             <Card className="border-0 bg-white py-0 shadow-sm ring-1 ring-slate-200/80">
               <CardHeader className="border-b border-slate-100 px-6 py-5"><CardTitle className="flex items-center gap-2 font-extrabold"><UserRound className="size-5 text-blue-600" /> Thông tin phiên thi</CardTitle><CardDescription>Đối chiếu đúng phòng và số máy trước khi bắt đầu.</CardDescription></CardHeader>
               <CardContent className="grid gap-5 p-6 sm:grid-cols-2">
-                <label htmlFor="candidate-name" className="grid gap-2 text-xs font-bold text-slate-600 sm:col-span-2">Họ và tên thí sinh<Input id="candidate-name" value={candidateName} onChange={(event) => setCandidateName(event.target.value)} className="h-11 bg-slate-50 text-sm font-medium" /></label>
+                <label htmlFor="candidate-name" className="grid gap-2 text-xs font-bold text-slate-600">Họ và tên thí sinh<Input id="candidate-name" autoComplete="name" placeholder="Nhập đúng họ và tên" value={candidateName} onChange={(event) => setCandidateName(event.target.value)} className="h-11 bg-slate-50 text-sm font-medium" /></label>
+                <label htmlFor="candidate-id" className="grid gap-2 text-xs font-bold text-slate-600">Số báo danh<Input id="candidate-id" placeholder="Ví dụ: SBD001" value={candidateId} onChange={(event) => setCandidateId(event.target.value.toUpperCase())} className="h-11 bg-slate-50 text-sm font-medium" /></label>
                 <label htmlFor="room-id" className="grid gap-2 text-xs font-bold text-slate-600">Mã phòng thi<Input id="room-id" value={roomId} onChange={(event) => setRoomId(event.target.value.toUpperCase())} className="h-11 bg-slate-50 text-sm font-medium" /></label>
                 <label htmlFor="station-id" className="grid gap-2 text-xs font-bold text-slate-600">Số máy / vị trí<Input id="station-id" value={stationId} onChange={(event) => setStationId(event.target.value.toUpperCase())} className="h-11 bg-slate-50 text-sm font-medium" /></label>
+                {!hasFirebaseConfig && <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4"><div className="flex items-center gap-2"><Cable className="size-4 text-blue-600" /><b className="text-xs text-slate-800">Kết nối máy giám thị</b></div><p className="mt-1 text-[10px] leading-5 text-slate-500">Nhập địa chỉ LAN đang hiển thị trên dashboard của giáo viên.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row"><Input aria-label="Địa chỉ máy giám thị" value={hubAddress} onChange={(event) => { setHubAddress(event.target.value); setHubState('unchecked'); }} onKeyDown={(event) => { if (event.key === 'Enter') void connectTeacherHub(); }} placeholder="Ví dụ: http://192.168.1.10:8765" className="h-11 bg-white font-mono text-xs" /><Button type="button" variant="outline" onClick={() => void connectTeacherHub()} disabled={hubState === 'checking' || !hubAddress.trim()} className="h-11 shrink-0 bg-white"><Wifi className="size-4" />{hubState === 'checking' ? 'Đang kiểm tra…' : 'Kiểm tra kết nối'}</Button></div><div className={`mt-3 flex items-center gap-2 text-[10px] font-bold ${hubState === 'connected' ? 'text-emerald-700' : hubState === 'disconnected' ? 'text-rose-700' : 'text-slate-500'}`}>{hubState === 'connected' ? <Wifi className="size-3.5" /> : <WifiOff className="size-3.5" />}{hubMessage}</div></div>}
                 <div className="sm:col-span-2 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4"><Switch aria-label="Xác nhận đã đọc thông báo giám sát" checked={consented} onCheckedChange={setConsented} className="mt-0.5" /><div><b className="block text-xs text-blue-950">Tôi đã đọc thông báo giám sát</b><p className="mt-1 text-xs leading-5 text-blue-700/75">Tôi đồng ý bật webcam trong thời gian thi và hiểu rằng AI chỉ tạo cảnh báo hỗ trợ giám thị.</p></div></div>
-                <Button size="lg" disabled={!consented || !candidateName || !roomId || !stationId} onClick={startMonitoring} className="h-12 rounded-xl bg-blue-600 font-extrabold hover:bg-blue-500 sm:col-span-2"><Play data-icon="inline-start" /> Kiểm tra webcam và bắt đầu</Button>
+                <Button size="lg" disabled={modelState === 'loading' || !consented || !candidateName.trim() || !candidateId.trim() || !roomId.trim() || !stationId.trim() || (!hasFirebaseConfig && hubState !== 'connected')} onClick={startMonitoring} className="h-12 rounded-xl bg-blue-600 font-extrabold hover:bg-blue-500 sm:col-span-2"><Play data-icon="inline-start" /> {modelState === 'loading' ? 'Đang chuẩn bị webcam…' : 'Kiểm tra webcam và bắt đầu'}</Button>
                 {errorMessage && <p className="sm:col-span-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700"><AlertTriangle className="mr-2 inline size-4" />{errorMessage}</p>}
               </CardContent>
             </Card>
 
             <Card className="border-0 bg-[#091a34] py-0 text-white shadow-xl shadow-slate-300/30 ring-0">
-              <CardHeader className="px-6 pt-6"><CardTitle className="font-extrabold">Hệ thống sẽ kiểm tra</CardTitle><CardDescription className="text-slate-400">5 lớp tín hiệu, xử lý theo bộ đệm thời gian 5–10 giây.</CardDescription></CardHeader>
+              <CardHeader className="px-6 pt-6"><CardTitle className="font-extrabold">Hệ thống sẽ kiểm tra</CardTitle><CardDescription className="text-slate-400">Các tín hiệu được lọc theo bộ đệm 2–5 giây để giảm báo nhầm.</CardDescription></CardHeader>
               <CardContent className="grid gap-3 p-6 pt-4">
                 {[
                   [ScanFace, 'Khuôn mặt', 'Vắng mặt hoặc xuất hiện người thứ hai'],
@@ -397,7 +542,7 @@ export default function CandidatePage() {
 
         <div className={`grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)] ${running ? '' : 'hidden'}`}>
             <section className="overflow-hidden rounded-[22px] bg-[#07162d] shadow-[0_24px_70px_rgba(9,28,55,.24)]">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-5 py-4 text-white"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-emerald-400/12 text-emerald-300"><Radio className="size-[18px]" /></span><div><b className="block text-sm">{candidateName}</b><small className="text-[10px] font-semibold text-slate-400">{roomId} · {stationId}</small></div></div><div className="flex items-center gap-2"><Badge className={`${modelState === 'ready' ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-300/15 text-amber-200'} border-0`}><span className="mr-1 size-1.5 rounded-full bg-current" />{modelState === 'ready' ? 'AI cục bộ đang chạy' : 'Chế độ camera'}</Badge><Button variant="ghost" size="sm" onClick={stopMonitoring} className="text-slate-300 hover:bg-white/8 hover:text-white"><Square className="size-3.5" /> Dừng</Button></div></div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-5 py-4 text-white"><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-emerald-400/12 text-emerald-300"><Radio className="size-[18px]" /></span><div><b className="block text-sm">{candidateName} · {candidateId}</b><small className="text-[10px] font-semibold text-slate-400">{roomId} · {stationId}</small></div></div><div className="flex items-center gap-2"><Badge className={`${hubState === 'connected' ? 'bg-emerald-400/15 text-emerald-300' : 'bg-rose-400/15 text-rose-200'} border-0`}><Wifi className="mr-1 size-3" />{hubState === 'connected' ? 'Đã nối máy giám thị' : 'Mất kết nối'}</Badge><Badge className={`${modelState === 'ready' && !analysisStalled ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-300/15 text-amber-200'} border-0`}><span className="mr-1 size-1.5 rounded-full bg-current" />{modelState === 'ready' ? (analysisStalled ? 'AI đã tạm dừng' : 'AI cục bộ đang chạy') : 'Chế độ camera'}</Badge><Button variant="ghost" size="sm" onClick={stopMonitoring} className="text-slate-300 hover:bg-white/8 hover:text-white"><Square className="size-3.5" /> Dừng</Button></div></div>
               <div className="relative aspect-video bg-[#030b17]">
                 <video ref={videoRef} muted playsInline className="h-full w-full -scale-x-100 object-cover" />
                 <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full -scale-x-100" />
@@ -413,11 +558,14 @@ export default function CandidatePage() {
                 <CardContent className="grid grid-cols-2 gap-3 p-5">
                   {[
                     ['Khuôn mặt', String(metrics.faceCount), metrics.faceCount === 1 ? 'Tốt' : 'Kiểm tra'],
-                    ['Quay đầu', `${Math.abs(metrics.headYaw).toFixed(0)}°`, Math.abs(metrics.headYaw) < 22 ? 'Trong ngưỡng' : 'Lệch'],
-                    ['Cúi/ngẩng', `${Math.abs(metrics.headPitch).toFixed(0)}°`, Math.abs(metrics.headPitch) < 20 ? 'Trong ngưỡng' : 'Lệch'],
-                    ['Hướng mắt', `${Math.abs(metrics.gazeX * 100).toFixed(0)}%`, Math.abs(metrics.gazeX) < .55 ? 'Trung tâm' : 'Lệch'],
+                    ['Quay đầu', `${Math.abs(metrics.headYaw).toFixed(0)}°`, Math.abs(metrics.headYaw) <= HEAD_YAW_ALERT_DEGREES ? 'Trong ngưỡng' : 'Lệch'],
+                    ['Cúi/ngẩng', `${Math.abs(metrics.headPitch).toFixed(0)}°`, Math.abs(metrics.headPitch) <= HEAD_PITCH_ALERT_DEGREES ? 'Trong ngưỡng' : 'Lệch'],
+                    ['Hướng mắt', `${Math.abs(metrics.gazeX * 100).toFixed(0)}%`, Math.abs(metrics.gazeX) <= GAZE_X_ALERT_RATIO ? 'Trung tâm' : 'Lệch'],
                   ].map(([label, value, hint]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><small className="text-[10px] font-semibold text-slate-400">{label}</small><b className="mt-1 block text-lg font-black tracking-tight">{value}</b><span className="mt-1 block text-[9px] font-bold text-slate-500">{hint}</span></div>)}
-                  <div className="col-span-2 border-t border-slate-100 pt-4"><div className="mb-2 flex justify-between text-[10px] font-bold"><span className="text-slate-500">Độ ổn định khung hình</span><span className="text-emerald-600">{metrics.faceCount === 1 ? '92%' : '46%'}</span></div><Progress value={metrics.faceCount === 1 ? 92 : 46} /></div>
+                  <div className="col-span-2 border-t border-slate-100 pt-4" aria-live="polite">
+                    <b className="block text-sm text-slate-800">Tiến trình tạo cảnh báo</b>
+                    {modelState !== 'ready' || analysisStalled ? <p className="mt-2 text-sm text-amber-700">Chưa có AI phân tích. Camera mở chưa có nghĩa là đã nhận diện.</p> : behaviorProgress.length ? behaviorProgress.map((item) => <div key={item.type} className="mt-3"><div className="mb-1 flex justify-between gap-2 text-sm"><span>{ALERT_LABELS[item.type]}</span><b>{Math.min(item.elapsedSeconds, item.requiredSeconds).toFixed(1)} / {item.requiredSeconds}s</b></div><Progress value={Math.min(100, item.elapsedSeconds / item.requiredSeconds * 100)} /></div>) : <p className="mt-2 text-sm text-slate-500">Chưa có tín hiệu vượt ngưỡng. Quay đầu: trên {HEAD_YAW_ALERT_DEGREES}° ước tính trong {activeThresholds.headTurnSeconds}s.</p>}
+                  </div>
                   <div className="col-span-2 flex items-center justify-between rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-600"><span><CircleGauge className="mr-2 inline size-4 text-slate-400" /> Chế độ máy cấu hình thấp</span><Switch aria-label="Chế độ máy cấu hình thấp" size="sm" checked={lowPowerMode} onCheckedChange={setLowPowerMode} /></div>
                 </CardContent>
               </Card>
@@ -425,7 +573,7 @@ export default function CandidatePage() {
               <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200/80">
                 <CardHeader className="border-b border-slate-100 px-5 py-4"><CardTitle className="flex items-center gap-2 text-sm font-extrabold"><AlertTriangle className="size-4 text-amber-500" /> Sự kiện trên máy này</CardTitle></CardHeader>
                 <CardContent className="p-3">
-                  {recentEvents.length ? recentEvents.map((event) => <div key={event.id} className="flex gap-3 rounded-xl p-3 hover:bg-slate-50"><span className={`mt-0.5 size-2 shrink-0 rounded-full ${event.severity === 'critical' ? 'bg-rose-500' : event.severity === 'warning' ? 'bg-amber-400' : 'bg-cyan-500'}`} /><div><b className="block text-xs">{event.title}</b><small className="mt-1 block text-[10px] leading-4 text-slate-400">{new Date(event.timestamp).toLocaleTimeString('vi-VN')}</small></div></div>) : <div className="py-6 text-center"><CheckCircle2 className="mx-auto size-7 text-emerald-500" /><p className="mt-2 text-xs font-bold text-slate-700">Chưa có sự kiện cảnh báo</p><small className="mt-1 block text-[10px] text-slate-400">Hãy giữ tư thế ổn định và nhìn vào màn hình.</small></div>}
+                  {recentEvents.length ? recentEvents.map((event) => <div key={event.id} className="flex gap-3 rounded-xl p-3 hover:bg-slate-50"><span className={`mt-0.5 size-2 shrink-0 rounded-full ${event.severity === 'critical' ? 'bg-rose-500' : event.severity === 'warning' ? 'bg-amber-400' : 'bg-cyan-500'}`} /><div><b className="block text-xs">{event.title}</b><small className="mt-1 block text-[10px] leading-4 text-slate-400">{new Date(event.timestamp).toLocaleTimeString('vi-VN')}</small><small className={`mt-1 block text-sm ${deliveredIds.includes(event.id) ? 'text-emerald-700' : 'text-amber-700'}`}>{deliveredIds.includes(event.id) ? 'Giám thị đã nhận' : 'Đang chờ gửi đến giám thị'}</small></div></div>) : <div className="py-6 text-center"><CheckCircle2 className="mx-auto size-7 text-emerald-500" /><p className="mt-2 text-xs font-bold text-slate-700">Chưa có sự kiện cảnh báo</p><small className="mt-1 block text-[10px] text-slate-400">Hãy giữ tư thế ổn định và nhìn vào màn hình.</small></div>}
                   <details className="mt-2 rounded-xl bg-slate-50 p-3"><summary className="cursor-pointer text-[10px] font-bold text-slate-500">Kiểm tra đường truyền cảnh báo</summary><div className="mt-3 grid grid-cols-2 gap-2"><Button variant="outline" size="xs" onClick={() => createTestAlert('gaze_away')}>Thử cảnh báo vàng</Button><Button variant="outline" size="xs" onClick={() => createTestAlert('no_face')}>Thử cảnh báo đỏ</Button></div></details>
                 </CardContent>
               </Card>

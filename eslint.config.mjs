@@ -13,6 +13,9 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'work/**',
+    'DU_AN_PYTHON/**',
+    '.tmp-docx/**',
+    'public/mediapipe/**',
     'next-env.d.ts',
   ]),
 ]);

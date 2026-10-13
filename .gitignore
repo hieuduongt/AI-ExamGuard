@@ -39,6 +39,13 @@ next-env.d.ts
 /.vercel/
 /outputs/
 /work/
+__pycache__/
+*.py[cod]
 
 .vercel
 .env*
+/build/
+/release/
+DU_AN_PYTHON/dist/
+DU_AN_PYTHON/ui/
+.tmp-docx/rendered*/

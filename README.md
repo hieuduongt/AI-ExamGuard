@@ -30,6 +30,17 @@ Mở `http://localhost:3000`. Để thử luồng thời gian thực cục bộ,
 
 Webcam chỉ hoạt động trên `localhost` hoặc website HTTPS. Mô hình MediaPipe được tải trong lần chạy đầu tiên; sau đó toàn bộ suy luận diễn ra trong trình duyệt của thí sinh.
 
+## Chạy nhiều máy bằng bản EXE trong mạng LAN
+
+Bản desktop tích hợp một trung tâm cảnh báo LAN tại cổng `8765`, không cần Firebase:
+
+1. Máy giáo viên chạy `AI_ExamGuard_Portable.exe`, mở `/giam-thi` và sao chép địa chỉ LAN được hiển thị.
+2. Mỗi máy học sinh chạy cùng file EXE, mở `/thi-sinh`, nhập họ tên, số báo danh, phòng và số máy.
+3. Máy học sinh nhập địa chỉ của máy giáo viên, bấm **Kiểm tra kết nối**, sau đó mới bắt đầu giám sát.
+4. Khi có cảnh báo, dashboard hiển thị phòng, máy, số báo danh và họ tên tương ứng.
+
+Các máy phải dùng chung LAN/Wi-Fi và Windows Firewall phải cho phép ứng dụng trên mạng Private. Đây là chế độ mạng nội bộ tin cậy; không mở cổng `8765` ra Internet. Dữ liệu tại trung tâm LAN nằm trong bộ nhớ, vì vậy cần xuất CSV trước khi đóng ứng dụng máy giáo viên.
+
 ## Kết nối Firebase
 
 Sao chép `.env.example` thành `.env.local`, sau đó điền cấu hình Web App của Firebase:
@@ -96,6 +107,28 @@ Các tín hiệu đang được theo dõi:
 
 ```bash
 npm run lint
+npm test
 npx tsc --noEmit
 npm run build
+python -m unittest discover -s tests -p test_desktop.py -v
 ```
+
+Kiểm tra tích hợp (trên dữ liệu QA riêng): chạy hai tiến trình `python tests/serve-hub.py`,
+sau đó `node tests/alert-flow.cjs URL_THI_SINH URL_GIAM_THI`.
+Script cần Playwright và Microsoft Edge; có thể đặt `PLAYWRIGHT_MODULE` đến thư mục
+Playwright đã cài. Bài kiểm tra sử dụng camera giả lập không có người với MediaPipe
+thật, mở cửa sổ giám thị riêng, xác nhận đúng danh tính và trạng thái nhận cảnh báo.
+Phần quay đầu dùng chỉ số giả lập qua đúng bộ phát hiện sản xuất, kiểm tra cả lỗi
+mạng và gửi lại. Đây không thay thế kiểm thử quay đầu với người thật/webcam thực tế.
+
+Đóng gói bản sửa mà không ghi đè EXE đang chạy (PowerShell):
+
+```powershell
+npm run build
+$env:EXAMGUARD_EXE_NAME = 'AI_ExamGuard_2026_09_08_3'
+pyinstaller --noconfirm AI_ExamGuard_Portable.spec
+```
+
+Bản 2026.09.08.3 mở Giám thị trong cửa sổ riêng khi đang ở Thí sinh, giữ bộ đếm
+qua nhiễu ngắn, báo rõ AI ngừng phân tích và lưu hàng đợi cảnh báo để gửi lại.
+Xem `HUONG_DAN_CHAY_EXE.txt` để kiểm tra trên một máy hoặc nhiều máy LAN.
