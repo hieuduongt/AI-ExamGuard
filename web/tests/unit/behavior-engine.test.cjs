@@ -2,8 +2,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadSource } = require('../helpers/load-source.cjs');
-const { BehaviorEngine } = loadSource('src/lib/behavior-engine.ts');
-const { DEFAULT_THRESHOLDS } = loadSource('src/lib/exam-types.ts');
+const { BehaviorEngine } = loadSource('src/domain/behavior-engine.ts');
+const { DEFAULT_THRESHOLDS } = loadSource('src/domain/thresholds.ts');
 const neutral = { faceCount: 1, headYaw: 0, headPitch: 0, gazeX: 0, gazeY: 0, fps: 12 };
 function sample(engine, time, overrides = {}) {
   return engine.update({ ...neutral, ...overrides }, time, DEFAULT_THRESHOLDS);

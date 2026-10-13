@@ -11,7 +11,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { getFirebaseDb, hasFirebaseConfig } from '@/lib/firebase-client';
-import type { ExamEvent, StationStatus, VisionMetrics } from '@/lib/exam-types';
+import type { ExamEvent, StationStatus, VisionMetrics } from '@/domain/exam-types';
 
 const EVENT_KEY = 'examguard:events:v2';
 const STATION_KEY = 'examguard:stations:v2';

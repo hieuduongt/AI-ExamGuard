@@ -1,6 +1,6 @@
 import type { AlertType, BehaviorThresholds, VisionMetrics } from './exam-types';
+import { VISION_LIMITS } from './thresholds';
 
-export const VISION_LIMITS = { headYaw: 14, headPitch: 20, gazeX: 0.55, gazeY: 0.7 };
 const RECOVERY_MS = 400;
 const MAX_FRAME_GAP_MS = 1500;
 

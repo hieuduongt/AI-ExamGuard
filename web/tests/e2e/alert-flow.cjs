@@ -2,9 +2,7 @@
 // Run with: node tests/e2e/alert-flow.cjs STUDENT_ORIGIN TEACHER_ORIGIN
 // Set PLAYWRIGHT_MODULE to a preinstalled Playwright module directory if needed.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const ts = require('typescript');
+const { browserBundle } = require('../helpers/load-source.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const [studentUrl, teacherUrl] = process.argv.slice(2);
 if (!studentUrl || !teacherUrl) throw new Error('Pass two isolated test-server origins');
@@ -22,21 +20,15 @@ async function snapshot() { return (await fetch(`${teacherUrl}/api/snapshot`)).j
 
 function injectedModules() {
   // Execute the same source modules that production uses; no fake event endpoint.
-  const sourceFiles = {
-    types: 'src/lib/exam-types.ts', engine: 'src/lib/behavior-engine.ts', store: 'src/lib/exam-store.ts',
-  };
-  let script = 'window.qaModules = {};';
-  for (const [key, file] of Object.entries(sourceFiles)) {
-    const output = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', '..', file), 'utf8'), {
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-    }).outputText;
-    script += `\n{ const exports = {}; const require = (name) => {
-      if(name === 'firebase/firestore') return {};
-      if(name === '@/lib/firebase-client') return {hasFirebaseConfig:false,getFirebaseDb:()=>null};
-      throw new Error('Unexpected import '+name);
-    }; ${output}\nwindow.qaModules[${JSON.stringify(key)}] = exports; }`;
-  }
-  return script;
+  return browserBundle({
+    thresholds: 'src/domain/thresholds.ts',
+    catalog: 'src/domain/alert-catalog.ts',
+    engine: 'src/domain/behavior-engine.ts',
+    store: 'src/lib/exam-store.ts',
+  }, {
+    'firebase/firestore': '{}',
+    'src/lib/firebase-client.ts': '{ hasFirebaseConfig: false, getFirebaseDb: () => null }',
+  });
 }
 
 (async () => {
@@ -96,21 +88,21 @@ function injectedModules() {
     let blocked = true;
     await pupil.route('**/api/events', (route) => blocked ? route.abort('failed') : route.continue());
     const generatedId = await pupil.evaluate(({ qaId }) => {
-      const { engine, types, store } = window.qaModules;
+      const { engine, thresholds, catalog, store } = window.qaModules;
       const detector = new engine.BehaviorEngine();
       let result;
       let metrics;
       let turn;
       for (let t = 0; t <= 4500; t += 100) {
         metrics = { faceCount: 1, headYaw: t % 1000 === 500 ? 13.7 : -18.4, headPitch: 0, gazeX: 0, gazeY: 0, fps: 12 };
-        result = detector.update(metrics, t, types.DEFAULT_THRESHOLDS);
+        result = detector.update(metrics, t, thresholds.DEFAULT_THRESHOLDS);
         turn = result.triggered.find((item) => item.type === 'head_turn');
         if (turn) break;
       }
       if (!turn) throw new Error('Engine did not detect sustained noisy turn');
       const id = store.makeId('qa-turn');
       store.publishEvent({ id, roomId:'PHONG-01', stationId:qaId, candidateId:qaId, candidateName:'Học sinh kiểm thử',
-        type:turn.type, severity:'warning', title:types.ALERT_LABELS[turn.type], detail:engine.behaviorDetail(turn, metrics),
+        type:turn.type, severity:'warning', title:catalog.ALERT_LABELS[turn.type], detail:engine.behaviorDetail(turn, metrics),
         timestamp:Date.now(), reviewed:false, source:'ai' });
       return id;
     }, { qaId });

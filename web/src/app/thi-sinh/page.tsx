@@ -1,6 +1,6 @@
 'use client';
 
-import type { FaceLandmarker, FaceLandmarkerResult, NormalizedLandmark } from '@mediapipe/tasks-vision';
+import type { FaceLandmarker } from '@mediapipe/tasks-vision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
@@ -30,8 +30,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
-import { BehaviorEngine, behaviorDetail, VISION_LIMITS, type BehaviorProgress } from '@/lib/behavior-engine';
-import { ALERT_LABELS, DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY, type AlertType, type BehaviorThresholds, type ExamEvent, type VisionMetrics } from '@/lib/exam-types';
+import { EMPTY_METRICS, calculateMetrics } from '@/ai/face-metrics';
+import { drawOverlay } from '@/ai/face-overlay';
+import { loadFaceLandmarker } from '@/ai/face-landmarker-loader';
+import { ALERT_LABELS, alertSeverity } from '@/domain/alert-catalog';
+import { BehaviorEngine, behaviorDetail, type BehaviorProgress } from '@/domain/behavior-engine';
+import type { AlertType, BehaviorThresholds, ExamEvent, VisionMetrics } from '@/domain/exam-types';
+import { classifyMetrics } from '@/domain/station-health';
+import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY, VISION_LIMITS, parseSavedThresholds } from '@/domain/thresholds';
+import { cameraErrorMessage } from '@/features/candidate/camera-errors';
 import {
   getConfiguredHubUrl,
   getPendingEventCount,
@@ -46,101 +53,8 @@ type ModelState = 'idle' | 'loading' | 'ready' | 'camera-only' | 'error';
 type HubState = 'unchecked' | 'checking' | 'connected' | 'disconnected';
 type CooldownTimer = Partial<Record<AlertType, number>>;
 
-const initialMetrics: VisionMetrics = { faceCount: 0, gazeX: 0, gazeY: 0, headYaw: 0, headPitch: 0, fps: 0 };
-const { headYaw: HEAD_YAW_ALERT_DEGREES, headPitch: HEAD_PITCH_ALERT_DEGREES, gazeX: GAZE_X_ALERT_RATIO, gazeY: GAZE_Y_ALERT_RATIO } = VISION_LIMITS;
-
-function average(values: number[]) {
-  return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
-}
-
-function point(landmarks: NormalizedLandmark[], index: number) {
-  return landmarks[index] ?? { x: 0.5, y: 0.5, z: 0, visibility: 0 };
-}
-
-function ratio(value: number, min: number, max: number) {
-  return (value - min) / Math.max(max - min, 0.001);
-}
-
-function cameraErrorMessage(error: unknown) {
-  if (error instanceof DOMException) {
-    switch (error.name) {
-      case 'NotAllowedError':
-      case 'SecurityError':
-        return 'Trình duyệt đang chặn quyền camera. Hãy cho phép Camera cho trang này rồi thử lại.';
-      case 'NotFoundError':
-      case 'DevicesNotFoundError':
-        return 'Không tìm thấy webcam trên thiết bị. Hãy kết nối camera rồi thử lại.';
-      case 'NotReadableError':
-      case 'TrackStartError':
-        return 'Không thể mở webcam. Camera có thể đang được ứng dụng khác sử dụng.';
-      case 'OverconstrainedError':
-        return 'Webcam không hỗ trợ cấu hình hình ảnh được yêu cầu.';
-      case 'AbortError':
-        return 'Trình duyệt đã dừng quá trình mở webcam. Vui lòng thử lại.';
-    }
-  }
-
-  return error instanceof Error
-    ? error.message
-    : 'Không thể khởi động webcam. Vui lòng kiểm tra quyền camera trong trình duyệt.';
-}
-
-function calculateMetrics(result: FaceLandmarkerResult, fps: number): VisionMetrics {
-  const faceCount = result.faceLandmarks.length;
-  if (!faceCount) return { ...initialMetrics, fps };
-  const landmarks = result.faceLandmarks[0];
-  const nose = point(landmarks, 1);
-  const leftCheek = point(landmarks, 234);
-  const rightCheek = point(landmarks, 454);
-  const forehead = point(landmarks, 10);
-  const chin = point(landmarks, 152);
-
-  const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
-  const headYaw = ((nose.x - average([leftCheek.x, rightCheek.x])) / Math.max(faceWidth, 0.01)) * 110;
-  const headPitch = (ratio(nose.y, forehead.y, chin.y) - 0.54) * 95;
-
-  const leftIris = point(landmarks, 468);
-  const rightIris = point(landmarks, 473);
-  const leftX = ratio(leftIris.x, point(landmarks, 33).x, point(landmarks, 133).x);
-  const rightX = ratio(rightIris.x, point(landmarks, 362).x, point(landmarks, 263).x);
-  const leftY = ratio(leftIris.y, point(landmarks, 159).y, point(landmarks, 145).y);
-  const rightY = ratio(rightIris.y, point(landmarks, 386).y, point(landmarks, 374).y);
-
-  return {
-    faceCount,
-    gazeX: (average([leftX, rightX]) - 0.5) * 2,
-    gazeY: (average([leftY, rightY]) - 0.5) * 2,
-    headYaw,
-    headPitch,
-    fps,
-  };
-}
-
-function drawOverlay(canvas: HTMLCanvasElement, result: FaceLandmarkerResult) {
-  const context = canvas.getContext('2d');
-  if (!context) return;
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  result.faceLandmarks.forEach((landmarks, faceIndex) => {
-    const xs = landmarks.map((item) => item.x * canvas.width);
-    const ys = landmarks.map((item) => item.y * canvas.height);
-    const left = Math.min(...xs);
-    const top = Math.min(...ys);
-    const width = Math.max(...xs) - left;
-    const height = Math.max(...ys) - top;
-    context.strokeStyle = faceIndex === 0 ? '#34d399' : '#fb7185';
-    context.lineWidth = 3;
-    context.setLineDash([10, 7]);
-    context.strokeRect(left - 10, top - 10, width + 20, height + 20);
-    context.setLineDash([]);
-    [1, 33, 133, 362, 263, 468, 473].forEach((index) => {
-      const landmark = point(landmarks, index);
-      context.fillStyle = index >= 468 ? '#22d3ee' : '#60a5fa';
-      context.beginPath();
-      context.arc(landmark.x * canvas.width, landmark.y * canvas.height, index >= 468 ? 4 : 2.5, 0, Math.PI * 2);
-      context.fill();
-    });
-  });
-}
+const initialMetrics: VisionMetrics = EMPTY_METRICS;
+const { headYaw: HEAD_YAW_ALERT_DEGREES, headPitch: HEAD_PITCH_ALERT_DEGREES, gazeX: GAZE_X_ALERT_RATIO } = VISION_LIMITS;
 
 export default function CandidatePage() {
   const [candidateName, setCandidateName] = useState('');
@@ -223,9 +137,7 @@ export default function CandidatePage() {
 
   const health = useMemo(() => {
     if (!running) return 'idle';
-    if (metrics.faceCount === 0 || metrics.faceCount > 1) return 'critical';
-    if (Math.abs(metrics.headYaw) > HEAD_YAW_ALERT_DEGREES || Math.abs(metrics.headPitch) > HEAD_PITCH_ALERT_DEGREES || Math.abs(metrics.gazeX) > GAZE_X_ALERT_RATIO || Math.abs(metrics.gazeY) > GAZE_Y_ALERT_RATIO) return 'warning';
-    return 'normal';
+    return classifyMetrics(metrics);
   }, [metrics, running]);
 
   const emitAlert = useCallback((type: AlertType, detail: string, source: ExamEvent['source'] = 'ai') => {
@@ -235,7 +147,7 @@ export default function CandidatePage() {
     if (source !== 'demo') cooldownsRef.current[type] = now;
     alertCountRef.current += 1;
     const identity = identityRef.current;
-    const severity = type === 'no_face' || type === 'multiple_faces' ? 'critical' : 'warning';
+    const severity = alertSeverity(type);
     const event: ExamEvent = {
       id: makeId(),
       ...identity,
@@ -265,11 +177,7 @@ export default function CandidatePage() {
     const analysisState = modelStateRef.current === 'ready' ? (fresh ? 'ready' : 'stalled')
       : modelStateRef.current === 'loading' ? 'loading' : 'error';
     setAnalysisStalled(analysisState === 'stalled');
-    const state = analysisState !== 'ready' ? 'warning' : nextMetrics.faceCount === 0 || nextMetrics.faceCount > 1
-      ? 'critical'
-      : Math.abs(nextMetrics.headYaw) > HEAD_YAW_ALERT_DEGREES || Math.abs(nextMetrics.headPitch) > HEAD_PITCH_ALERT_DEGREES || Math.abs(nextMetrics.gazeX) > GAZE_X_ALERT_RATIO || Math.abs(nextMetrics.gazeY) > GAZE_Y_ALERT_RATIO
-        ? 'warning'
-        : 'normal';
+    const state = analysisState !== 'ready' ? 'warning' : classifyMetrics(nextMetrics);
     publishStation({ ...identity, state, metrics: nextMetrics, lastSeen: Date.now(), alertCount: alertCountRef.current,
       analysisState, lastAnalyzedAt: lastAnalyzedRef.current, behaviorProgress: fresh ? progressRef.current : [],
       analysisMessage: analysisState === 'stalled' ? 'Camera không có khung hình AI mới' : analysisErrorRef.current,
@@ -396,18 +304,7 @@ export default function CandidatePage() {
     setCandidateId(identity.candidateId);
     setRoomId(identity.roomId);
     setStationId(identity.stationId);
-    thresholdsRef.current = { ...DEFAULT_THRESHOLDS };
-    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings) as { thresholds?: BehaviorThresholds };
-        thresholdsRef.current = { ...DEFAULT_THRESHOLDS };
-        for (const key of Object.keys(DEFAULT_THRESHOLDS) as Array<keyof BehaviorThresholds>) {
-          const value = parsed.thresholds?.[key];
-          if (typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 60) thresholdsRef.current[key] = value;
-        }
-      } catch { thresholdsRef.current = DEFAULT_THRESHOLDS; }
-    }
+    thresholdsRef.current = parseSavedThresholds(localStorage.getItem(SETTINGS_STORAGE_KEY));
     setActiveThresholds(thresholdsRef.current);
     setErrorMessage('');
     setModelState('loading');
@@ -429,31 +326,8 @@ export default function CandidatePage() {
       setStatusText('Đang tải mô hình nhận diện khuôn mặt…');
 
       try {
-        const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-        let fileset;
-        try {
-          fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm');
-        } catch {
-          fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
-        }
-
-        let detector: FaceLandmarker | null = null;
-        let modelError: unknown;
-        for (const modelAssetPath of ['/mediapipe/face_landmarker.task', 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task']) {
-          for (const delegate of ['GPU', 'CPU'] as const) {
-            if (session !== sessionRef.current) return;
-            try {
-              detector = await FaceLandmarker.createFromOptions(fileset, {
-                baseOptions: { modelAssetPath, delegate }, runningMode: 'VIDEO', numFaces: 2,
-                minFaceDetectionConfidence: 0.55, minFacePresenceConfidence: 0.55, minTrackingConfidence: 0.5,
-                outputFaceBlendshapes: false, outputFacialTransformationMatrixes: false,
-              });
-              break;
-            } catch (error) { modelError = error; }
-          }
-          if (detector) break;
-        }
-        if (!detector) throw modelError ?? new Error('Không tải được mô hình nhận diện');
+        const detector = await loadFaceLandmarker(() => session !== sessionRef.current);
+        if (!detector) return;
         if (session !== sessionRef.current) { detector.close(); return; }
         landmarkerRef.current = detector;
         modelStateRef.current = 'ready';

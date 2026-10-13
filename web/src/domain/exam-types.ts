@@ -1,3 +1,7 @@
+// Shared data shapes for an exam session. These fields are also the LAN API
+// contract with desktop/ (see docs/ky-thuat/api-lan.md); rename nothing here
+// without updating the desktop hub.
+
 export type AlertSeverity = 'info' | 'warning' | 'critical';
 
 export type AlertType =
@@ -58,23 +62,3 @@ export interface BehaviorThresholds {
   gazeAwaySeconds: number;
   cooldownSeconds: number;
 }
-
-export const DEFAULT_THRESHOLDS: BehaviorThresholds = {
-  noFaceSeconds: 5,
-  multipleFacesSeconds: 2,
-  headTurnSeconds: 3,
-  gazeAwaySeconds: 5,
-  cooldownSeconds: 12,
-};
-
-export const SETTINGS_STORAGE_KEY = 'examguard:settings:v2';
-
-export const ALERT_LABELS: Record<AlertType, string> = {
-  no_face: 'Không có mặt trước máy',
-  multiple_faces: 'Xuất hiện nhiều khuôn mặt',
-  head_turn: 'Quay đầu trái/phải kéo dài',
-  head_pose: 'Cúi/ngẩng đầu bất thường',
-  gaze_away: 'Hướng mắt lệch màn hình',
-  focus_lost: 'Rời khỏi cửa sổ bài thi',
-  restricted_input: 'Thao tác bàn phím bị hạn chế',
-};

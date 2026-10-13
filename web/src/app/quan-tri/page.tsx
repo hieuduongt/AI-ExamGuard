@@ -25,7 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY, type BehaviorThresholds } from '@/lib/exam-types';
+import type { BehaviorThresholds } from '@/domain/exam-types';
+import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY } from '@/domain/thresholds';
 import { hasFirebaseConfig } from '@/lib/exam-store';
 
 export default function AdminPage() {
