@@ -1,5 +1,9 @@
 # Dữ liệu lưu trong trình duyệt, Firestore và tín hiệu nội bộ
 
+**Nói ngắn gọn:** mỗi trình duyệt có một "ngăn kéo" nhỏ (localStorage) để nhớ vài thứ qua các lần mở:
+địa chỉ máy giám thị, cấu hình phòng, cảnh báo chưa gửi được, có bật tiếng hay không. Tài liệu này liệt kê
+từng ngăn chứa gì, ai ghi vào.
+
 Đổi bất kỳ tên nào dưới đây sẽ làm mất dữ liệu đã lưu trên máy người dùng hoặc làm các tab/máy
 không hiểu nhau. Nếu buộc phải đổi cấu trúc, hãy tăng hậu tố phiên bản (`v2` → `v3`) và viết code đọc bản cũ.
 
@@ -13,6 +17,23 @@ không hiểu nhau. Nếu buộc phải đổi cấu trúc, hãy tăng hậu t�
 | `examguard:events:v2` | Cảnh báo của chế độ demo (tối đa 500) | `services/local-demo/local-store.ts` |
 | `examguard:stations:v2` | Trạng thái máy của chế độ demo (tối đa 150) | `services/local-demo/local-store.ts` |
 | `examguard:proctor-sound:v1` | Âm thanh cảnh báo ở trang giám thị: `'on'` / `'off'` (không có khóa = bật) | `features/proctor/hooks/use-alert-sound.ts` |
+
+### Xóa dữ liệu trình duyệt có sao không?
+
+Xóa được, dữ liệu ca thi thật nằm ở trung tâm LAN chứ không nằm ở đây. Chỉ cần biết sẽ mất gì:
+
+- `teacher-hub`, `events`, `stations`: xóa thoải mái (địa chỉ cũ, dữ liệu demo cũ).
+- `outbox`: **không xóa trên máy học sinh đang thi**, vì sẽ mất các cảnh báo còn chờ gửi lại.
+- `settings`: mất cấu hình trang Quản trị (tên phòng, ngưỡng), quay về mặc định.
+- `proctor-sound`: âm thanh quay về Bật.
+
+Xóa riêng các khóa có thể gây lỗi, giữ cấu hình (dán vào Console của DevTools trên đúng trang đó):
+
+```js
+['examguard:teacher-hub:v1','examguard:outbox:v1','examguard:events:v2','examguard:stations:v2'].forEach(k => localStorage.removeItem(k)); location.reload();
+```
+
+Mỗi địa chỉ (`localhost:8765`, `127.0.0.1:8765`, cửa sổ EXE) có localStorage riêng.
 
 ## BroadcastChannel
 

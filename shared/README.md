@@ -1,23 +1,40 @@
 # shared/ — Hợp đồng chung giữa web/ và desktop-hub/
 
-`web/` (TypeScript) và `desktop-hub/` (Python) là hai ngôn ngữ khác nhau nhưng phải thống nhất một số
-giá trị. File [`hub-contract.json`](hub-contract.json) là **nguồn chuẩn duy nhất** của các giá trị đó:
+## Đọc trong 1 phút
+
+`web/` viết bằng TypeScript, `desktop-hub/` viết bằng Python. Hai bên "nói chuyện" với nhau qua mạng, nên phải
+thống nhất một số điều: gọi nhau ở cổng nào, gửi những trường nào, có những loại cảnh báo gì…
+
+Ví von: hai bạn ở hai lớp khác nhau chơi trò gửi thư mật mã. Muốn hiểu nhau thì cả hai phải dùng **chung một
+bảng mật mã**. File [`hub-contract.json`](hub-contract.json) chính là bảng mật mã đó, và là **nguồn chuẩn duy nhất**.
+
+## Trong hợp đồng có gì?
 
 | Khóa | Ý nghĩa | Code tương ứng |
 | --- | --- | --- |
 | `appVersion` | Phiên bản phát hành | `desktop-hub/examguard_desktop/config.py` |
-| `defaultHubPort` | Cổng mặc định của trung tâm LAN | `config.py` và `web/src/services/hub/hub-url.ts` |
-| `discoveryPort`, `discoveryService` | Cổng UDP và tên dịch vụ để tự tìm máy giám thị | `config.py`, `discovery.py` |
-| `maxBodyBytes`, `eventLimit` | Giới hạn 1 MB / 500 sự kiện | `config.py` |
-| `identityFields` | Trường bắt buộc khi gửi sự kiện / trạng thái máy | `http_handler.py` và `web/src/domain/exam-types.ts` |
-| `alertTypes` | Danh sách loại cảnh báo | `web/src/domain/exam-types.ts`, `alert-catalog.ts` |
-| `endpoints` | Các API LAN | `http_handler.py` và `web/src/services/hub/`; chi tiết ở `docs/ky-thuat/api-lan.md` |
+| `defaultHubPort` | Cổng TCP mặc định của trung tâm LAN (`8765`) | `config.py` và `web/src/services/hub/hub-url.ts` |
+| `discoveryPort`, `discoveryService` | Cổng UDP (`8766`) và tên dịch vụ để tự tìm máy giám thị | `config.py`, `discovery.py` |
+| `maxBodyBytes`, `eventLimit` | Giới hạn 1 MB mỗi yêu cầu / giữ 500 cảnh báo mới nhất | `config.py` |
+| `identityFields` | Trường bắt buộc khi gửi cảnh báo / trạng thái máy: phòng, máy, SBD, họ tên | `http_handler.py` và `web/src/domain/exam-types.ts` |
+| `alertTypes` | Danh sách 7 loại cảnh báo | `web/src/domain/exam-types.ts`, `alert-catalog.ts` |
+| `endpoints` | Các API LAN | `http_handler.py` và `web/src/services/hub/`; chi tiết ở [docs/ky-thuat/api-lan.md](../docs/ky-thuat/api-lan.md) |
 
-Code **không đọc** file này khi chạy (mỗi bên giữ bản sao của mình để bản EXE không phụ thuộc thêm file).
-Thay vào đó, kiểm thử ở cả hai bên so sánh code với file này:
+## Vì sao code không đọc trực tiếp file này?
 
-- `web/tests/unit/contract.test.cjs` (`npm test`)
-- `desktop-hub/tests/test_contract.py` (`python -m unittest`)
+Bản EXE cần chạy độc lập, không phụ thuộc thêm file ngoài. Vì vậy mỗi bên **giữ bản sao** của các giá trị trong
+code của mình, và **kiểm thử ở cả hai bên** so sánh bản sao đó với file hợp đồng:
 
-**Khi đổi một giá trị:** sửa `hub-contract.json` trước, chạy test của cả hai phần, rồi sửa code ở chỗ nào test báo lệch.
-Nhớ rằng máy học sinh và máy giáo viên có thể chạy hai bản EXE khác nhau, nên đổi hợp đồng phải giữ tương thích ngược.
+- `web/tests/unit/contract.test.cjs` (chạy bằng `npm test` trong `web/`)
+- `desktop-hub/tests/test_contract.py` (chạy bằng `python -m unittest` trong `desktop-hub/`)
+
+Lệch một chỗ là test báo đỏ ngay, chỉ rõ giá trị nào sai.
+
+## Khi muốn đổi một giá trị
+
+1. Sửa `hub-contract.json` trước.
+2. Chạy test của cả hai phần.
+3. Sửa code ở đúng chỗ test báo lệch.
+
+Nhớ rằng máy học sinh và máy giáo viên có thể chạy **hai bản EXE khác nhau**. Đổi hợp đồng phải giữ tương thích
+ngược: thêm thì được, xóa hoặc đổi nghĩa thì phải cân nhắc kỹ.

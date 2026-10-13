@@ -35,7 +35,7 @@ chức năng không đổi nhưng code nằm ở chỗ khác. Bảng dưới gi�
 | 05 | Kiểu dữ liệu phiên thi, tên cảnh báo | `web/src/domain/exam-types.ts`, `web/src/domain/alert-catalog.ts` |
 | 06 | Máy chủ LAN và 6 API | `desktop-hub/examguard_desktop/server.py`, `http_handler.py`, `exam_store.py`, `network.py` |
 | 07 | An toàn API và đường dẫn | `http_handler.py` (kiểm tra dữ liệu, chặn tệp ngoài `out`, ưu tiên `.html`), `exam_store.py` (khóa, giới hạn 500), `config.py` (1 MB); test `desktop-hub/tests/test_hub_api.py` |
-| 08 | Biểu mẫu thí sinh, kiểm tra kết nối | `web/src/features/candidate/components/session-form-card.tsx`, `hub-connection-panel.tsx`, `hooks/use-hub-connection.ts` |
+| 08 | Biểu mẫu thí sinh, kiểm tra kết nối | `web/src/features/candidate/components/session-form-card.tsx`, `hub-connection-panel.tsx`, `hooks/use-hub-connection.ts` (bổ sung sau: `hooks/use-hub-discovery.ts`, tìm máy giám thị bằng mã kết nối) |
 | 09 | Vòng đời webcam, lỗi camera | `web/src/features/candidate/hooks/use-monitoring-session.ts`, `camera-errors.ts`, `components/camera-panel.tsx` |
 | 10 | Mô hình MediaPipe tại máy, GPU → CPU | `web/public/mediapipe/`, `web/src/ai/face-landmarker-loader.ts` |
 | 11 | Tính tín hiệu khuôn mặt, vẽ khung | `web/src/ai/face-metrics.ts`, `face-overlay.ts`; test `web/tests/unit/face-metrics.test.cjs` |
@@ -44,7 +44,7 @@ chức năng không đổi nhưng code nằm ở chỗ khác. Bảng dưới gi�
 | 14 | Nhịp trạng thái 2 giây, AI tạm dừng 3 giây, mất kết nối 7 giây | `use-monitoring-session.ts` (`detectionLoop`, `updateStation`), `web/src/features/proctor/event-filters.ts` |
 | 15 | Tiến trình cảnh báo trên trang thí sinh | `web/src/features/candidate/components/live-signals-card.tsx` |
 | 16 | Chuyển tab, Ctrl/Cmd + C/V/X/P | `web/src/features/candidate/hooks/use-browser-guard.ts` |
-| 17 | Kết nối thí sinh với máy giám thị | `web/src/services/exam-sync.ts`, `services/hub/hub-url.ts`, `hub-client.ts`, `hub-transport.ts` |
+| 17 | Kết nối thí sinh với máy giám thị | `web/src/services/exam-sync.ts`, `services/hub/hub-url.ts`, `hub-client.ts`, `hub-transport.ts`, `hub-discovery.ts`; `desktop-hub/examguard_desktop/discovery.py` |
 | 18 | Hàng đợi gửi lại, không trùng | `web/src/services/hub/outbox.ts`, `features/candidate/hooks/use-delivery-status.ts`, `desktop-hub/examguard_desktop/exam_store.py` (`add_event`) |
 | 19 | Dashboard đọc `/api/snapshot` mỗi giây | `web/src/features/proctor/hooks/use-proctor-feed.ts`, `exam-sync.ts` (`subscribeExamData`), `components/station-grid.tsx` |
 | 20 | Dải cảnh báo mới, bộ lọc | `web/src/features/proctor/components/new-alert-banner.tsx`, `event-feed.tsx`, `event-filters.ts` |

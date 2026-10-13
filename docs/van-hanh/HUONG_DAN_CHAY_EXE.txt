@@ -1,13 +1,97 @@
-AI EXAMGUARD - HƯỚNG DẪN CHẠY EXE TRÊN NHIỀU MÁY
-===================================================
+AI EXAMGUARD - HƯỚNG DẪN DÙNG TRONG PHÒNG THI
+==============================================
 
 BẢN SỬA 2026.09.08.3: AI_ExamGuard_2026_09_08_3.exe
 Hãy dùng đúng bản này; bản EXE đang mở trước khi cập nhật không tự thay đổi.
 
-THỬ QUAY ĐẦU TRÊN MỘT MÁY
---------------------------
-1) Mở khu vực Giám thị để lấy địa chỉ kết nối, rồi trở lại Thí sinh.
-2) Nhập thông tin, kiểm tra kết nối, cho phép webcam và bắt đầu.
+TÓM TẮT 30 GIÂY
+---------------
+  Giáo viên: mở EXE -> "Vào phòng giám thị" -> đọc MÃ KẾT NỐI 4 số cho cả lớp.
+  Học sinh:  mở EXE -> "Bắt đầu kiểm tra thiết bị" -> điền thông tin -> gõ mã
+             -> thấy "Đã kết nối với máy giám thị" -> đồng ý -> bắt đầu.
+  Có cảnh báo: máy kêu tiếng + hiện đỏ/vàng -> giáo viên tới xem -> xác minh.
+  Cuối ca: "Xuất báo cáo" TRƯỚC KHI đóng EXE trên máy giáo viên.
+
+Yêu cầu
+-------
+- Máy giáo viên và các máy học sinh dùng chung mạng LAN hoặc Wi-Fi
+  (không cần Internet).
+- Windows 10/11 có Microsoft Edge WebView2 (thường đã được cài sẵn).
+- Máy học sinh có webcam.
+- Nếu Windows Firewall hỏi, chọn Allow access/Cho phép trên mạng Private.
+
+1. Trên máy giáo viên
+---------------------
+1) Chạy file EXE.
+2) Chọn "Vào phòng giám thị".
+3) Đầu trang hiện khung "Địa chỉ kết nối dành cho máy thí sinh", ví dụ:
+       Mã kết nối: 4821      http://192.168.1.10:8765
+   - Địa chỉ luôn là IP hiện tại của máy (đổi mạng thì tự cập nhật).
+   - Mã kết nối đổi mỗi lần mở ứng dụng.
+4) Đọc mã kết nối cho học sinh (hoặc gửi địa chỉ nếu mạng không cho tự tìm).
+5) Giữ ứng dụng VÀ trang Giám thị mở suốt ca thi. Đóng trang Giám thị thì máy
+   học sinh không tự tìm thấy máy này nữa.
+6) Nên đặt "Tên hiển thị" của phòng ở trang Quản trị (biểu tượng bánh răng),
+   ví dụ "Phòng thi 01". Máy học sinh sẽ thấy tên phòng này, kèm nhãn
+   "Trùng phòng của bạn" nếu học sinh nhập đúng mã phòng (ví dụ PHONG-01).
+
+2. Trên mỗi máy học sinh
+------------------------
+1) Chạy cùng file EXE.
+2) Chọn "Bắt đầu kiểm tra thiết bị".
+3) Nhập đầy đủ:
+   - Họ và tên
+   - Số báo danh
+   - Mã phòng thi
+   - Số máy/vị trí
+4) Gõ MÃ KẾT NỐI 4 số: ứng dụng tự tìm máy giám thị trong mạng và kết nối.
+   - Có nhiều máy giám thị trùng mã (rất hiếm): chọn đúng phòng của mình.
+   - Báo "Không tìm thấy" (mạng chặn tự tìm): gõ địa chỉ máy giám thị vào ô
+     bên dưới rồi bấm "Kiểm tra kết nối".
+5) Chỉ khi hiện "Đã kết nối với máy giám thị" mới bấm được nút bắt đầu.
+6) Đọc thông báo giám sát, bật "Tôi đã đọc thông báo giám sát", bấm
+   "Kiểm tra webcam và bắt đầu", cho phép webcam.
+7) Không chuyển sang cửa sổ/tab khác, không dùng Ctrl+C/V/X/P: các thao tác này
+   được ghi thành cảnh báo.
+
+3. Khi có dấu hiệu bất thường
+-----------------------------
+- Dashboard giáo viên hiện rõ phòng, số máy, họ tên và số báo danh.
+- Máy chuyển màu vàng/đỏ, có dải "Cảnh báo mới cần kiểm tra" và kêu tiếng cảnh báo.
+  Nút "Âm thanh: Bật/Tắt" ở đầu dashboard để bật/tắt tiếng. Nếu nút chuyển thành
+  "Bấm để bật âm thanh" (trình duyệt chặn tự phát tiếng), bấm vào nút đó một lần.
+- Giáo viên mở chi tiết, tới xem thực tế, rồi bấm "Đánh dấu đã xác minh".
+- Màu máy: XANH = bình thường; VÀNG = quay đầu/cúi/mắt lệch kéo dài, hoặc AI
+  tạm dừng; ĐỎ = không thấy mặt hoặc nhiều khuôn mặt; XÁM "mất kết nối" = 7 giây
+  không nhận được tín hiệu từ máy đó.
+- AI chỉ phát hiện dấu hiệu nghi vấn; giáo viên là người kết luận theo quy chế.
+
+4. Kết thúc ca thi
+------------------
+1) Trên máy giáo viên bấm "Xuất báo cáo" (file CSV mở được bằng Excel).
+2) Học sinh bấm Dừng rồi đóng ứng dụng.
+3) Sau đó mới đóng EXE trên máy giáo viên. Dữ liệu cảnh báo chỉ nằm trong bộ nhớ,
+   đóng EXE là mất.
+
+Xử lý khi không kết nối được
+----------------------------
+- Kiểm tra tất cả máy đang dùng cùng mạng.
+- Kiểm tra trang Giám thị trên máy giáo viên vẫn đang mở.
+- Kiểm tra đúng mã, hoặc đúng địa chỉ và cổng đang hiển thị (có thể khác 8765
+  nếu mở nhiều EXE).
+- Cho phép AI ExamGuard qua Windows Firewall trên mạng Private (cần cả cổng TCP
+  8765 và UDP 8766 để tự tìm bằng mã kết nối).
+- Tắt VPN hoặc mạng khách/Guest Wi-Fi có chế độ chặn các thiết bị nhìn thấy nhau.
+  Một số Wi-Fi chặn gói broadcast: khi đó mã kết nối không dùng được, hãy nhập địa chỉ.
+- Ô địa chỉ của học sinh còn hiện địa chỉ cũ từ buổi trước: cứ gõ mã kết nối
+  hoặc sửa thành địa chỉ mới, ứng dụng sẽ ghi nhớ địa chỉ mới.
+- Không đóng ứng dụng trên máy giáo viên.
+
+Thử trên một máy (trước buổi thi)
+---------------------------------
+1) Mở khu vực Giám thị để xem mã/địa chỉ, rồi trở lại Thí sinh.
+2) Nhập thông tin, gõ địa chỉ của chính máy, kiểm tra kết nối, cho phép webcam và
+   bắt đầu.
 3) Chờ trạng thái AI đang phân tích. Camera có hình chưa đủ để xác nhận AI chạy.
 4) Bấm "Mở Giám thị ↗" để mở cửa sổ riêng. Không đóng hoặc thu nhỏ cửa sổ webcam;
    đặt hai cửa sổ cạnh nhau khi thử. Chuyển trang trong cùng cửa sổ sẽ dừng camera.
@@ -24,64 +108,10 @@ THỬ QUAY ĐẦU TRÊN MỘT MÁY
 Chỉ số góc là ước tính từ khuôn mặt, không phải phép đo góc chính xác.
 Cảnh báo chỉ là nghi vấn để giám thị kiểm tra, không tự động kết luận gian lận.
 
-Yêu cầu
--------
-- Máy giáo viên và các máy học sinh dùng chung mạng LAN hoặc Wi-Fi.
-- Windows 10/11 có Microsoft Edge WebView2 (thường đã được cài sẵn).
-- Nếu Windows Firewall hỏi, chọn Allow access/Cho phép trên mạng Private.
-
-1. Trên máy giáo viên
----------------------
-1) Chạy AI_ExamGuard_Portable.exe.
-2) Chọn "Vào phòng giám thị".
-3) Dashboard hiển thị "Địa chỉ kết nối dành cho máy thí sinh" gồm MÃ KẾT NỐI 4 số
-   và địa chỉ, ví dụ:
-   Mã kết nối: 4821      http://192.168.1.10:8765
-   Địa chỉ luôn là IP hiện tại của máy (tự cập nhật khi đổi mạng). Mã đổi mỗi lần
-   mở ứng dụng.
-4) Đọc mã kết nối cho học sinh (hoặc gửi địa chỉ nếu mạng không cho tự tìm).
-5) Giữ ứng dụng và trang Giám thị mở trong suốt ca thi (đóng trang Giám thị thì
-   máy học sinh không tự tìm thấy máy này nữa).
-6) Nên đặt "Tên hiển thị" phòng ở trang Quản trị (ví dụ "Phòng thi 01") để máy
-   học sinh thấy tên phòng và nhãn "Trùng phòng của bạn".
-
-2. Trên mỗi máy học sinh
------------------------
-1) Chạy cùng file AI_ExamGuard_Portable.exe.
-2) Chọn "Bắt đầu kiểm tra thiết bị".
-3) Nhập đầy đủ:
-   - Họ và tên
-   - Số báo danh
-   - Mã phòng thi
-   - Số máy/vị trí
-4) Nhập MÃ KẾT NỐI 4 số: ứng dụng tự tìm máy giám thị trong mạng và kết nối.
-   - Nếu có nhiều máy giám thị trùng mã, chọn đúng phòng của mình trong danh sách.
-   - Nếu báo không tìm thấy (mạng chặn tự tìm), nhập địa chỉ máy giám thị vào ô
-     bên dưới và bấm "Kiểm tra kết nối".
-5) Chỉ khi xuất hiện "Đã kết nối với máy giám thị" mới bắt đầu giám sát.
-
-3. Khi có dấu hiệu bất thường
------------------------------
-- Dashboard giáo viên hiển thị rõ phòng, số máy, họ tên và số báo danh.
-- Máy chuyển màu vàng/đỏ, có dải "Cảnh báo mới cần kiểm tra" và kêu tiếng cảnh báo.
-  Nút "Âm thanh: Bật/Tắt" ở đầu dashboard để bật/tắt tiếng. Nếu nút chuyển thành
-  "Bấm để bật âm thanh" (trình duyệt chặn tự phát tiếng), bấm vào nút đó một lần.
-- Giáo viên mở chi tiết rồi đánh dấu đã xác minh.
-- AI chỉ phát hiện dấu hiệu nghi vấn; giáo viên là người kết luận theo quy chế.
-
-Xử lý khi không kết nối được
-----------------------------
-- Kiểm tra tất cả máy đang dùng cùng mạng.
-- Kiểm tra đúng địa chỉ và cổng đang hiển thị (có thể khác 8765 nếu mở nhiều EXE).
-- Cho phép AI ExamGuard qua Windows Firewall trên mạng Private (cần cả cổng TCP
-  8765 và UDP 8766 để tự tìm bằng mã kết nối).
-- Tắt VPN hoặc mạng khách/Guest Wi-Fi có chế độ chặn các thiết bị nhìn thấy nhau.
-  Một số Wi-Fi chặn gói broadcast: khi đó mã kết nối không dùng được, hãy nhập địa chỉ.
-- Không đóng ứng dụng trên máy giáo viên.
-
 Lưu ý an toàn
 -------------
-- Bản LAN này dành cho mạng nội bộ tin cậy; không mở cổng 8765 ra Internet.
+- Bản LAN này dành cho mạng nội bộ tin cậy; không mở cổng 8765/8766 ra Internet.
+- Mã kết nối chỉ để phân biệt các máy giám thị, không phải mật khẩu.
 - Video webcam được xử lý tại máy học sinh, không truyền liên tục về máy giáo viên.
 - Dữ liệu cảnh báo của trung tâm nằm trong bộ nhớ và bị xóa khi đóng EXE giáo viên;
   hãy bấm "Xuất báo cáo" trước khi kết thúc ca thi.

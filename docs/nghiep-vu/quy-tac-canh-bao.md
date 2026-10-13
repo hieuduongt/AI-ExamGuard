@@ -1,5 +1,10 @@
 # Quy tắc tạo cảnh báo
 
+**Nói ngắn gọn:** AI không báo ngay khi bạn liếc sang một chút. Nó giống trọng tài cầm đồng hồ bấm giờ:
+chỉ khi một dấu hiệu **kéo dài liên tục đủ lâu** (ví dụ quay đầu hơn 3 giây, vắng mặt hơn 5 giây) mới thổi còi.
+Thổi còi xong phải nghỉ 12 giây mới được thổi lại cùng lỗi đó. Còi chỉ để gọi giám thị tới xem, **không phải
+phán quyết**.
+
 Mã nguồn tương ứng: `web/src/domain/` (thresholds, behavior-engine, alert-catalog, station-health)
 và `web/src/features/candidate/hooks/`. Kiểm thử: `web/tests/unit/behavior-engine.test.cjs`, `domain.test.cjs`.
 

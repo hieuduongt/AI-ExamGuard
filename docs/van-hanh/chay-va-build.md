@@ -1,5 +1,16 @@
 # Chạy thử, kiểm thử, build và triển khai
 
+**Nói ngắn gọn:** muốn chạy thử thì cần hai thứ: giao diện đã build (`web/out`) và trung tâm LAN đang chạy
+(`run_hub.py`). Muốn ra file EXE thì chạy một lệnh PowerShell trên Windows. Chọn mục bạn cần:
+
+| Tôi muốn… | Mục |
+| --- | --- |
+| Chạy thử trên Mac/Linux/Windows bằng trình duyệt | 1 |
+| Chạy đúng cửa sổ ứng dụng như EXE (Windows) | 2 |
+| Kiểm thử trước khi commit | 3 |
+| Build file EXE | 4 |
+| Đưa web lên Vercel | 5 |
+
 ## Chuẩn bị
 
 | Công cụ | Phiên bản | Dùng cho |

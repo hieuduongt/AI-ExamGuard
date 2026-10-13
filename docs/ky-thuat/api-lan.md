@@ -1,5 +1,9 @@
 # API trung tâm cảnh báo LAN
 
+**Nói ngắn gọn:** trung tâm LAN trên máy giáo viên giống một bưu điện có 7 ô cửa giao dịch (API). Máy học sinh
+tới ô "gửi cảnh báo" và ô "báo bình an mỗi 2 giây"; trang Giám thị tới ô "cho xem hết thư" mỗi giây. Ngoài ra
+bưu điện còn "hô" qua loa (UDP) để máy học sinh tìm thấy nó bằng mã 4 số. Phần dưới là chi tiết cho lập trình viên.
+
 Máy chủ trong `desktop-hub/examguard_desktop/http_handler.py`, mặc định cổng `8765` (bận thì tự chọn cổng khác;
 đổi bằng biến môi trường `EXAMGUARD_PORT`). Kiểm thử hợp đồng: `desktop-hub/tests/test_hub_api.py`.
 Phía gọi: `web/src/services/hub/`.

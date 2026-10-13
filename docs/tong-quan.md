@@ -12,12 +12,16 @@ ngắn và bị bỏ sót khi giám thị đang nhìn chỗ khác.
 AI ExamGuard là **"trợ lý quan sát"**: AI nhận biết tín hiệu, Behavior Engine kiểm tra tín hiệu có kéo dài đủ lâu
 không, rồi gửi cảnh báo để **giám thị kiểm tra thực tế và quyết định**. AI không kết luận gian lận.
 
+Ví dụ đời thường: giống **cảm biến lùi xe**. Cảm biến không lái xe thay người, nó chỉ kêu "bíp bíp" khi có vật
+ở gần quá lâu, còn người lái quay lại nhìn và quyết định. AI ExamGuard cũng vậy: chỉ "bíp" khi một dấu hiệu
+kéo dài đủ lâu, giám thị là người nhìn và quyết định.
+
 ## 2. Đối tượng và mục tiêu
 
 | Đối tượng | Trang | Việc chính |
 | --- | --- | --- |
-| Thí sinh | `/thi-sinh` | Khai báo họ tên, SBD, phòng, số máy, địa chỉ máy giám thị → kiểm tra kết nối → đồng ý giám sát → bật webcam |
-| Giám thị | `/giam-thi` | Sơ đồ máy (xanh/vàng/đỏ/mất kết nối), luồng cảnh báo, xem chi tiết, đánh dấu đã xác minh, xuất CSV |
+| Thí sinh | `/thi-sinh` | Khai báo họ tên, SBD, phòng, số máy → kết nối máy giám thị (gõ mã 4 số hoặc địa chỉ) → đồng ý giám sát → bật webcam |
+| Giám thị | `/giam-thi` | Mã kết nối + địa chỉ cho học sinh, sơ đồ máy (xanh/vàng/đỏ/mất kết nối), luồng cảnh báo kèm tiếng báo động, xem chi tiết, đánh dấu đã xác minh, xuất CSV |
 | Nhà trường / đơn vị tổ chức | `/quan-tri` | Đặt tên phòng, ngưỡng thời gian, tùy chọn quyền riêng tư, xuất cấu hình JSON |
 
 Bốn mục tiêu:
@@ -35,7 +39,8 @@ và các thao tác trong cửa sổ ứng dụng (rời cửa sổ bài thi, Ctr
 
 | Bước | Diễn ra |
 | --- | --- |
-| 1. Chuẩn bị phiên thi | Thí sinh nhập họ tên, SBD, mã phòng, số máy, địa chỉ máy giám thị; hệ thống kiểm tra kết nối trước khi cho bắt đầu |
+| 0. Mở máy giám thị | Giáo viên mở EXE → trang Giám thị hiện mã kết nối 4 số và địa chỉ LAN hiện tại của máy |
+| 1. Chuẩn bị phiên thi | Thí sinh nhập họ tên, SBD, mã phòng, số máy, rồi gõ mã kết nối (hoặc địa chỉ); hệ thống kiểm tra kết nối trước khi cho bắt đầu |
 | 2. Bật webcam | Thí sinh đọc thông báo và xác nhận đồng ý; chỉ sau đó webcam mới mở. Không thu âm, không bật camera bí mật |
 | 3. AI phân tích | MediaPipe Face Landmarker tìm khuôn mặt và điểm mốc → số mặt, góc quay, góc cúi/ngẩng, hướng mắt |
 | 4. Behavior Engine theo dõi | Đếm thời gian tín hiệu; chưa đủ ngưỡng thì chưa cảnh báo, nhiễu ngắn và camera đứng hình không được tính |
@@ -58,6 +63,11 @@ flowchart LR
   H -->|mỗi 1 giây:<br/>GET /api/snapshot| D[Dashboard giám thị]
   D -->|Đã xác minh:<br/>PATCH /api/events/id| H
 ```
+
+Trước đó, máy thí sinh tìm máy giám thị bằng **mã kết nối**: khi trang Giám thị đang mở, trung tâm trên máy
+giáo viên cứ 2 giây phát một gói tin UDP quảng bá (cổng `8766`) mang mã 4 số, tên phòng và cổng. EXE trên
+máy thí sinh nghe được gói đó, nên khi học sinh gõ đúng mã, trang thí sinh biết ngay địa chỉ để kết nối.
+Mạng chặn quảng bá thì học sinh gõ địa chỉ như cũ. Chi tiết: [ky-thuat/api-lan.md](ky-thuat/api-lan.md).
 
 Video **không rời khỏi máy thí sinh**. Chỉ có các con số (số khuôn mặt, góc ước tính, FPS) và sự kiện cảnh báo
 được gửi đi. Danh tính do thí sinh khai báo; sản phẩm không nhận diện danh tính bằng khuôn mặt.
@@ -103,8 +113,8 @@ web/          ──npm run build──▶  web/out/  (HTML/JS tĩnh + mô hình
 desktop-hub/  ───────────────────────┴──PyInstaller──▶  1 file EXE (release/)
 ```
 
-Một EXE dùng cho mọi máy. Máy giáo viên mở trang Giám thị và đọc địa chỉ LAN của mình
-(ví dụ `http://192.168.1.10:8765`); máy học sinh nhập địa chỉ đó ở trang Thí sinh.
+Một EXE dùng cho mọi máy. Máy giáo viên mở trang Giám thị và thấy mã kết nối cùng địa chỉ LAN của mình
+(ví dụ `4821` và `http://192.168.1.10:8765`); máy học sinh gõ mã đó (hoặc địa chỉ) ở trang Thí sinh.
 
 ## 8. Hạn chế và hướng cải tiến
 
