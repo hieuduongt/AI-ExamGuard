@@ -1,7 +1,21 @@
+/**
+ * File này vẽ phần giới thiệu lớn (nền xanh đậm) ở đầu trang chủ, gồm khẩu hiệu, hai nút
+ * bắt đầu và hình minh họa màn hình giám thị.
+ */
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, MonitorCheck, Sparkles, Video } from 'lucide-react';
 import { DashboardPreview } from './dashboard-preview';
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   phần giới thiệu lớn ở đầu trang chủ.
+ * Mục tiêu: nói ngắn gọn sản phẩm làm gì và mời người dùng bắt đầu.
+ * Chức năng: hiện khẩu hiệu, đoạn mô tả, hai nút "Bắt đầu kiểm tra thiết bị" (sang "/thi-sinh")
+ *   và "Mở dashboard giám thị" (sang "/giam-thi"), kèm hình minh họa màn hình giám thị.
+ * Đầu ra: giao diện phần giới thiệu.
+ * Dùng ở đâu: HomeScreen (web/src/features/home/home-screen.tsx).
+ * Liên kết với: DashboardPreview (dashboard-preview.tsx, hình minh họa bên phải).
+ */
 export function HeroSection() {
   return (
     <section className="relative bg-[#07162d] pb-18 pt-14 text-white sm:pb-24 sm:pt-20">

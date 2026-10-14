@@ -1,3 +1,8 @@
+/**
+ * File này là thẻ "Tín hiệu thời gian thực" trên trang thí sinh trong lúc thi: các con số AI
+ * đọc từ camera và tiến trình từng hành vi trước khi thành cảnh báo.
+ * Thuộc phần giao diện thí sinh (web/src/features/candidate/components/).
+ */
 import { CircleGauge } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -8,8 +13,11 @@ import type { BehaviorThresholds, VisionMetrics } from '@/domain/exam-types';
 import { VISION_LIMITS } from '@/domain/thresholds';
 import type { ModelState } from '../hooks/use-monitoring-session';
 
+// Lấy sẵn ba giới hạn từ VISION_LIMITS: góc quay đầu, góc cúi/ngẩng (độ) và tỉ lệ lệch mắt ngang.
 const { headYaw: HEAD_YAW_ALERT_DEGREES, headPitch: HEAD_PITCH_ALERT_DEGREES, gazeX: GAZE_X_ALERT_RATIO } = VISION_LIMITS;
 
+// Props: các con số AI, tình trạng AI, tiến trình hành vi, ngưỡng đang dùng,
+// và công tắc "chế độ máy cấu hình thấp".
 type Props = {
   metrics: VisionMetrics;
   modelState: ModelState;
@@ -20,7 +28,20 @@ type Props = {
   setLowPowerMode: (value: boolean) => void;
 };
 
-// Current face/head/gaze readings and how close each behaviour is to raising an alert.
+/**
+ * Đây là gì: React component thẻ "Tín hiệu thời gian thực".
+ * Mục tiêu: cho thí sinh thấy chỉ số khuôn mặt/đầu/mắt hiện tại và mỗi hành vi còn cách bao
+ *   xa mới thành cảnh báo, để tự điều chỉnh tư thế.
+ * Chức năng: hiện 4 ô số (số khuôn mặt, góc quay đầu, góc cúi/ngẩng, độ lệch mắt) kèm nhận
+ *   xét "Trong ngưỡng"/"Lệch"; hiện thanh tiến trình cho từng hành vi đang đếm (đã bao nhiêu
+ *   giây / cần bao nhiêu giây); nếu AI chưa chạy hoặc tạm dừng thì báo rõ; có công tắc chế độ
+ *   máy cấu hình thấp (AI phân tích thưa hơn cho đỡ nặng máy).
+ * Đầu ra: khối giao diện thẻ tín hiệu.
+ * Dùng ở đâu: candidate-screen.tsx, cột bên phải khi đang giám sát.
+ * Liên kết với: metrics, behaviorProgress, activeThresholds, lowPowerMode từ
+ *   hooks/use-monitoring-session.ts; ALERT_LABELS (web/src/domain/alert-catalog.ts);
+ *   VISION_LIMITS (web/src/domain/thresholds.ts).
+ */
 export function LiveSignalsCard({ metrics, modelState, analysisStalled, behaviorProgress, activeThresholds, lowPowerMode, setLowPowerMode }: Props) {
   return (
     <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200/80">

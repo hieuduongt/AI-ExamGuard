@@ -1,3 +1,9 @@
+/**
+ * File này là ô "Kết nối máy giám thị" trên trang thí sinh: nhập mã kết nối 4 số hoặc địa chỉ
+ * mạng LAN để máy thí sinh nối được với máy giám thị (hub: máy trung tâm của giám thị, nơi mọi
+ * máy thí sinh gửi cảnh báo về). Thuộc phần giao diện thí sinh
+ * (web/src/features/candidate/components/).
+ */
 import { Cable, Search, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,6 +11,8 @@ import { sameRoom, type DiscoveredHub } from '@/services/exam-sync';
 import type { HubState } from '../hooks/use-hub-connection';
 import type { useHubDiscovery } from '../hooks/use-hub-discovery';
 
+// Props: địa chỉ máy giám thị đang gõ, trạng thái và lời nhắn kết nối, các hàm đổi địa chỉ /
+// kiểm tra kết nối, kết quả tìm máy giám thị trong mạng (discovery), và mã phòng của thí sinh.
 type Props = {
   hubAddress: string;
   hubState: HubState;
@@ -15,10 +23,30 @@ type Props = {
   roomId: string;
 };
 
+/**
+ * Đây là gì: React component nhỏ ghi tên một máy giám thị tìm thấy trong mạng.
+ * Mục tiêu: giúp thí sinh nhận ra đúng máy giám thị của phòng mình.
+ * Chức năng: hiện tên phòng (hoặc "Chưa đặt tên phòng"), tên máy, địa chỉ; nếu tên phòng của
+ *   máy giám thị trùng với mã phòng thí sinh đã nhập thì thêm nhãn xanh "Trùng phòng của bạn".
+ * Đầu ra: một dòng chữ mô tả máy giám thị.
+ * Dùng ở đâu: CodeSearchStatus ngay bên dưới (danh sách máy cùng mã và máy trong mạng).
+ * Liên kết với: sameRoom và kiểu DiscoveredHub (web/src/services/hub/hub-discovery.ts).
+ */
 function HubLabel({ hub, roomId }: { hub: DiscoveredHub; roomId: string }) {
   return <><b className="text-slate-800">{hub.room || 'Chưa đặt tên phòng'}</b>{hub.host && <span className="text-slate-500"> · {hub.host}</span>}<span className="font-mono text-slate-500"> · {hub.hubUrl}</span>{sameRoom(hub.room, roomId) && <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-700">Trùng phòng của bạn</span>}</>;
 }
 
+/**
+ * Đây là gì: React component dòng trạng thái của việc tìm máy giám thị bằng mã 4 số.
+ * Mục tiêu: cho thí sinh biết đang tìm, không thấy, hay thấy nhiều máy và cần chọn.
+ * Chức năng: đang tìm thì hiện "Đang tìm..."; không thấy thì hướng dẫn kiểm tra lại; thấy
+ *   nhiều máy cùng mã thì hiện nút cho từng máy để chọn; còn lại thì liệt kê các máy giám thị
+ *   đang thấy trong mạng (hoặc báo chưa thấy máy nào).
+ * Đầu ra: khối chữ/nút trạng thái tìm kiếm.
+ * Dùng ở đâu: HubConnectionPanel ngay bên dưới, khi được phép nhập mã.
+ * Liên kết với: kết quả của useHubDiscovery (hooks/use-hub-discovery.ts): search, nearby,
+ *   code, chooseHub; HubLabel ở trên.
+ */
 function CodeSearchStatus({ discovery, roomId }: { discovery: Props['discovery']; roomId: string }) {
   const { search, nearby, code } = discovery;
   if (search.state === 'searching') return <p className="text-[10px] font-bold text-slate-500">Đang tìm máy giám thị có mã {code}…</p>;
@@ -30,6 +58,18 @@ function CodeSearchStatus({ discovery, roomId }: { discovery: Props['discovery']
   return <div className="grid gap-1"><p className="text-[10px] text-slate-500">Đang thấy {nearby.length} máy giám thị trong mạng:</p>{nearby.map((hub) => <p key={hub.hubUrl} className="text-[10px]"><HubLabel hub={hub} roomId={roomId} /></p>)}</div>;
 }
 
+/**
+ * Đây là gì: React component ô "Kết nối máy giám thị".
+ * Mục tiêu: giúp máy thí sinh nối được với máy giám thị trước khi bắt đầu thi.
+ * Chức năng: nếu tìm kiếm trong mạng dùng được và chưa kết nối thì cho nhập mã kết nối 4 số
+ *   (đủ 4 số là tự tìm, hoặc bấm "Tìm máy giám thị"); luôn có ô nhập địa chỉ LAN và nút
+ *   "Kiểm tra kết nối" (bấm Enter cũng được); cuối cùng là dòng trạng thái kết nối có màu.
+ * Đầu ra: khối giao diện kết nối máy giám thị.
+ * Dùng ở đâu: candidate-screen.tsx tạo khối này và truyền vào SessionFormCard (thuộc tính
+ *   hubPanel); nó chỉ hiện khi không dùng Firebase.
+ * Liên kết với: hooks/use-hub-connection.ts (địa chỉ, trạng thái, connectTeacherHub),
+ *   hooks/use-hub-discovery.ts (tìm bằng mã).
+ */
 export function HubConnectionPanel({ hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub, discovery, roomId }: Props) {
   const showCode = discovery.available && hubState !== 'connected';
   return (

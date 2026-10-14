@@ -1,4 +1,9 @@
 'use client';
+/**
+ * File này là màn hình chính của thí sinh (trang /thi-sinh): ô nhập thông tin, kết nối máy
+ * giám thị, camera và các thẻ tín hiệu. Thuộc phần giao diện vai trò thí sinh
+ * (web/src/features/candidate/). Nó chỉ ghép các khối giao diện và các hook lại với nhau.
+ */
 
 import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import { AdvisoryNote } from './components/advisory-note';
@@ -15,8 +20,20 @@ import { useHubConnection } from './hooks/use-hub-connection';
 import { useHubDiscovery } from './hooks/use-hub-discovery';
 import { useMonitoringSession } from './hooks/use-monitoring-session';
 
-// Candidate page (/thi-sinh). Both the form and the monitoring view stay mounted
-// and are toggled with `hidden`, so the <video> element survives the switch.
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình) của
+ *   cả trang thí sinh /thi-sinh.
+ * Mục tiêu: dẫn thí sinh từ bước nhập thông tin đến lúc camera giám sát chạy trong giờ thi.
+ * Chức năng: lấy dữ liệu từ 4 hook (hàm đặc biệt của React giúp màn hình nhớ dữ liệu và tự
+ *   vẽ lại khi dữ liệu đổi): trạng thái gửi cảnh báo, kết nối máy giám thị, phiên giám sát,
+ *   tìm máy giám thị trong mạng; chọn màu chấm trạng thái (đỏ/vàng/xanh/xám); rồi xếp các
+ *   khối con. Phần biểu mẫu và phần giám sát luôn cùng được gắn trên trang, chỉ ẩn/hiện bằng
+ *   lớp `hidden`, để thẻ <video> của camera không bị mất khi chuyển qua lại.
+ * Đầu ra: giao diện trang thí sinh.
+ * Dùng ở đâu: web/src/app/thi-sinh/page.tsx.
+ * Liên kết với: useDeliveryStatus, useHubConnection, useMonitoringSession, useHubDiscovery
+ *   (thư mục hooks/) và các khối trong thư mục components/.
+ */
 export function CandidateScreen() {
   const { deliveredIds, pendingCount, refreshPendingCount } = useDeliveryStatus();
   const { hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub, connectTo } = useHubConnection();

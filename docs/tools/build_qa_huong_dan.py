@@ -1,12 +1,30 @@
+"""
+Đây là gì: script tạo file Word "35 câu lệnh tạo AI ExamGuard" (build_qa_huong_dan.py).
+Mục tiêu: sinh tự động bản nháp tài liệu gồm 35 câu lệnh, gửi lần lượt cho trợ lý AI Codex để đi từ
+  mã nguồn tới ứng dụng Windows EXE.
+Chức năng: chứa sẵn 35 bước (biến STEPS), mỗi bước có tiêu đề và một câu lệnh; chạy từ trên xuống
+  dưới: đặt khổ A4 và lề, cài phông Arial và bỏ đường viền mặc định của các kiểu chữ, ghi tiêu đề và
+  hướng dẫn dùng, chèn đề mục nhóm trước các bước 4, 8, 12, ..., 32 (biến groups), thêm số trang ở
+  chân trang (trường PAGE: ô đặc biệt Word tự điền số trang); lưu xong thì mở lại file để kiểm tra
+  đúng 35 bước. Script dùng thư viện python-docx (giúp Python tạo file Word .docx).
+Đầu ra: file tai-lieu/AI_ExamGuard_35_Cau_Lenh_Tung_Buoc_Cho_Codex.docx ở thư mục gốc repo; in ra
+  màn hình đường dẫn file và dòng xác nhận đủ 35 bước.
+Dùng ở đâu: chạy tay bằng lệnh python3 docs/tools/build_qa_huong_dan.py (cần cài python-docx). Không
+  chạy lại để đè lên bản trong docs/tai-lieu-du-thi/ vì bản đó có thể đã được chỉnh tay.
+Liên kết với: build_32_cau_lenh.py (bản 32 câu lệnh tương tự); docs/van-de-ton-dong.md mục 8;
+  docs/README.md.
+"""
 from pathlib import Path
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+# Thư mục gốc của repo và đường dẫn file Word sẽ tạo ra.
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'tai-lieu' / 'AI_ExamGuard_35_Cau_Lenh_Tung_Buoc_Cho_Codex.docx'
 
+# STEPS: 35 bước, mỗi bước là (tiêu đề, câu lệnh gửi cho Codex).
 STEPS = [
 ('Chốt yêu cầu dự án', 'Hãy xây dựng AI ExamGuard trên Windows theo kiến trúc Next.js, React, TypeScript và Tailwind cho giao diện, MediaPipe Face Landmarker xử lý webcam tại máy thí sinh, Python với pywebview và WebView2 chạy desktop, PyInstaller đóng gói EXE, có bốn trang Trang chủ, Thí sinh, Giám thị, Quản trị và đồng bộ nhiều máy qua LAN; trước tiên hãy đọc mã nguồn cùng tài liệu nếu có, lập REQUIREMENTS.md với phạm vi và tiêu chí nghiệm thu, giữ AI ở vai trò cảnh báo để giám thị xác minh, rồi chỉ hoàn thành bước này và báo kết quả thực tế.'),
 ('Chuẩn bị môi trường phát triển', 'Hãy kiểm tra Node.js, npm, Python, kiến trúc Windows và WebView2, đối chiếu phiên bản tương thích với dự án rồi thiết lập môi trường Python .venv, cài thư viện frontend và các thư viện Python cần thiết gồm pywebview cùng PyInstaller, lưu package-lock.json và requirements.txt với phiên bản tái tạo được, tránh thay đổi môi trường toàn máy nếu không cần và báo rõ thành phần nào còn thiếu.'),
@@ -45,6 +63,7 @@ STEPS = [
 ('Viết hướng dẫn và xác nhận bàn giao', 'Hãy viết HUONG_DAN_CHAY_EXE.txt bằng tiếng Việt cho một máy và nhiều máy LAN, nêu cách mở máy giám thị trước rồi nhập địa chỉ thực tế trên máy thí sinh, yêu cầu WebView2 và quyền camera, cách cho phép ứng dụng qua Firewall trên mạng Private, xuất CSV trước khi đóng trung tâm và xử lý lỗi thường gặp, sau đó báo đường dẫn EXE, bộ mã nguồn, kết quả kiểm thử cùng những bước xác minh thực tế còn cần hoàn thành.'),
 ]
 
+# Phần chính: tạo tài liệu khổ A4, cài phông Arial và cỡ chữ cho các kiểu chữ.
 doc = Document()
 sec = doc.sections[0]
 sec.page_width = Cm(21)
@@ -80,6 +99,7 @@ p.runs[0].bold = True
 doc.add_paragraph('Mỗi bước dưới đây là một câu lệnh hoàn chỉnh để sao chép vào Codex, không phải lệnh gõ trong Terminal; mở thư mục dự án muốn làm, gửi lần lượt từng bước trong cùng cuộc trò chuyện và chờ hoàn thành trước khi gửi bước tiếp theo.')
 doc.add_paragraph('Nếu tạo mới, dùng thư mục trống; nếu làm tiếp dự án hiện có, giữ nguyên thư mục nguồn để Codex đọc và bổ sung phần còn thiếu; các bước 30 đến 35 dành cho build EXE, chạy thử và bàn giao.')
 
+# groups: số thứ tự bước -> tên nhóm; đề mục nhóm được chèn ngay trước bước đó.
 groups = {
     4: 'Tạo giao diện và chuẩn bị AI',
     8: 'Kết nối webcam và phân tích hành vi',
@@ -97,6 +117,7 @@ for i, (title, prompt) in enumerate(STEPS, 1):
     p = doc.add_paragraph(prompt)
     p.paragraph_format.keep_together = True
 
+# Chân trang có số trang, thông tin tài liệu, lưu file rồi mở lại để kiểm tra đủ 35 bước.
 foot = sec.footer.paragraphs[0]
 foot.alignment = 2
 r = foot.add_run('AI ExamGuard  |  ')

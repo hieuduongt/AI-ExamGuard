@@ -1,12 +1,28 @@
+// File này vẽ ngăn kéo chi tiết cảnh báo ở trang giám thị: tấm bảng trượt ra từ bên phải
+// khi giám thị chọn một cảnh báo.
+
 import { CheckCircle2, UserRoundCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { ExamEvent } from '@/domain/exam-types';
 import { alertIcons, severityClasses } from '../alert-style';
 
+// Props (thông tin khối cha truyền cho khối con): cảnh báo đang chọn, việc đóng bảng và việc
+// đánh dấu đã xác minh.
 type Props = { selectedEvent: ExamEvent; onClose: () => void; onReview: (id: string) => void };
 
-// Side panel where the proctor reads an alert and marks it as verified.
+/**
+ * Đây là gì: React component (một khối giao diện) bảng chi tiết cảnh báo nằm ở cạnh phải.
+ * Mục tiêu: nơi giám thị đọc kỹ một cảnh báo và đánh dấu là đã xác minh.
+ * Chức năng: hiện biểu tượng, mức độ, tiêu đề, mô tả, thời gian, nguồn (AI, trình duyệt hay
+ *   dữ liệu minh họa), phòng, máy, số báo danh, trạng thái; nhắc giám thị quan sát trực tiếp
+ *   thay vì chỉ dựa vào AI; nút "Đánh dấu đã xác minh" bị khóa nếu đã xác minh rồi.
+ * Đầu ra: khối giao diện bảng chi tiết phủ lên trang.
+ * Dùng ở đâu: ProctorScreen (web/src/features/proctor/proctor-screen.tsx) khi có cảnh báo
+ *   được chọn.
+ * Liên kết với: alertIcons, severityClasses (../alert-style.ts); reviewEvent trong
+ *   proctor-screen.tsx (gọi markEventReviewed của services/exam-sync.ts).
+ */
 export function EventDetailDrawer({ selectedEvent, onClose, onReview }: Props) {
   const Icon = alertIcons[selectedEvent.type];
   const tone = severityClasses(selectedEvent.severity);

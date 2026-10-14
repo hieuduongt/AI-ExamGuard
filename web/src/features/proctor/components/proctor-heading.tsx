@@ -1,8 +1,13 @@
+// File này vẽ phần đầu trang giám thị: tiêu đề, trạng thái kết nối, đồng hồ và các nút
+// âm thanh, "Tạo cảnh báo thử", "Xuất báo cáo".
+
 import { BellRing, Download, Radio, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { hasFirebaseConfig } from '@/services/exam-sync';
 
+// Props (thông tin khối cha truyền cho khối con): trạng thái kết nối, giờ hiện tại, trạng thái
+// âm thanh và các việc cần làm khi bấm nút.
 type Props = {
   hubConnected: boolean;
   clock: Date;
@@ -13,6 +18,16 @@ type Props = {
   onSoundButton: () => void;
 };
 
+/**
+ * Đây là gì: React component (một khối giao diện) nút bật/tắt âm thanh cảnh báo.
+ * Mục tiêu: cho giám thị chọn có nghe tiếng báo động khi có cảnh báo mới hay không.
+ * Chức năng: nếu trình duyệt đang chặn phát âm thanh (vì trang chưa được bấm lần nào) thì hiện
+ *   nút vàng nhấp nháy "Bấm để bật âm thanh"; còn lại hiện "Âm thanh: Bật" hoặc "Âm thanh: Tắt".
+ * Đầu ra: một nút bấm.
+ * Dùng ở đâu: ProctorHeading ngay bên dưới (chỉ dùng trong file này).
+ * Liên kết với: useAlertSound (../hooks/use-alert-sound.ts) cung cấp soundEnabled, soundBlocked,
+ *   onSoundButton.
+ */
 function SoundButton({ soundEnabled, soundBlocked, onSoundButton }: Pick<Props, 'soundEnabled' | 'soundBlocked' | 'onSoundButton'>) {
   if (soundBlocked) {
     return <Button variant="outline" size="lg" onClick={onSoundButton} className="h-10 animate-pulse border-amber-300 bg-amber-50 text-amber-800"><Volume2 /> Bấm để bật âm thanh</Button>;
@@ -20,6 +35,17 @@ function SoundButton({ soundEnabled, soundBlocked, onSoundButton }: Pick<Props, 
   return <Button variant="outline" size="lg" onClick={onSoundButton} aria-pressed={soundEnabled} title={soundEnabled ? 'Tắt âm thanh cảnh báo' : 'Bật âm thanh cảnh báo'} className="h-10 bg-white">{soundEnabled ? <Volume2 /> : <VolumeX />} {soundEnabled ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}</Button>;
 }
 
+/**
+ * Đây là gì: React component (một khối giao diện) phần tiêu đề trang giám thị.
+ * Mục tiêu: cho giám thị biết hệ thống có đang nối được không và đặt sẵn các nút chính.
+ * Chức năng: hiện nhãn trạng thái (Firebase thời gian thực / trung tâm LAN đang hoạt động /
+ *   mất kết nối), tiêu đề, nút âm thanh, nút "Tạo cảnh báo thử", nút "Xuất báo cáo" và đồng hồ
+ *   (hiện "—" khi đồng hồ chưa chạy).
+ * Đầu ra: khối giao diện phần đầu trang.
+ * Dùng ở đâu: ProctorScreen (web/src/features/proctor/proctor-screen.tsx).
+ * Liên kết với: SoundButton ở trên; addDemoAlert, exportCsv trong proctor-screen.tsx;
+ *   hubConnected và clock từ useProctorFeed (../hooks/use-proctor-feed.ts); hasFirebaseConfig.
+ */
 export function ProctorHeading({ hubConnected, clock, onDemoAlert, onExport, soundEnabled, soundBlocked, onSoundButton }: Props) {
   return (
     <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

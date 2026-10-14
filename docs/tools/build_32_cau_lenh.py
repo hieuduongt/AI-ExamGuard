@@ -1,13 +1,32 @@
+"""
+Đây là gì: script tạo file Word "32 câu lệnh tạo AI ExamGuard và build EXE" (build_32_cau_lenh.py).
+Mục tiêu: sinh tự động bản nháp tài liệu gồm 32 câu lệnh, gửi lần lượt cho trợ lý AI Codex để tạo dự
+  án từ thư mục trống tới file EXE chạy trên Windows.
+Chức năng: chứa sẵn 32 câu lệnh chia thành 8 trang theo chủ đề (biến PAGES); chạy từ trên xuống
+  dưới: đặt khổ giấy và lề, cài kiểu chữ, ghi tiêu đề và phần "Cách dùng", mỗi chủ đề sang trang
+  mới, mỗi bước là đề mục "Bước 01 ..." kèm một đoạn câu lệnh; kiểm tra đủ 32 bước; thêm số trang ở
+  chân trang (trường PAGE: ô đặc biệt Word tự điền số trang). Script dùng thư viện python-docx (giúp
+  Python tạo file Word .docx).
+Đầu ra: file tai-lieu/AI_ExamGuard_32_Cau_Lenh_Tao_Du_An_Va_Build_EXE.docx ở thư mục gốc repo; in ra
+  màn hình đường dẫn file, số bước và tổng số từ trong các câu lệnh.
+Dùng ở đâu: chạy tay bằng lệnh python3 docs/tools/build_32_cau_lenh.py (cần cài python-docx). Không
+  chạy lại để đè lên bản trong docs/tai-lieu-du-thi/ vì bản đó đã được chỉnh tay (thêm phần ChatGPT
+  và hình ảnh).
+Liên kết với: docs/ky-thuat/doi-chieu-32-buoc.md (đối chiếu từng bước với mã nguồn thật);
+  docs/van-de-ton-dong.md mục 8 và 10; build_qa_huong_dan.py (bản 35 câu lệnh tương tự).
+"""
 from pathlib import Path
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+# Thư mục gốc của repo và đường dẫn file Word sẽ tạo ra.
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / 'tai-lieu' / 'AI_ExamGuard_32_Cau_Lenh_Tao_Du_An_Va_Build_EXE.docx'
 
-# Each numbered step contains exactly one copyable instruction paragraph.
+# Mỗi bước đánh số chứa đúng một đoạn câu lệnh để sao chép nguyên văn.
+# PAGES: danh sách các trang; mỗi trang gồm (tên chủ đề, các bước (tiêu đề, câu lệnh)).
 PAGES = [
     ('Khởi tạo và xác định phạm vi', [
         ('Thiết lập cách làm việc', 'Hãy tạo mới dự án AI ExamGuard trong thư mục hiện tại để hỗ trợ giám sát thi trên Windows qua mạng LAN, chỉ tạo cảnh báo nghi vấn để giáo viên xác minh, dùng Next.js 16, React 19, TypeScript, Tailwind CSS 4, MediaPipe Tasks Vision và Python với pywebview, làm lần lượt theo từng yêu cầu tôi gửi, thực hiện mã nguồn thật rồi kiểm tra, báo ngắn gọn tệp đã tạo và kết quả kiểm tra sau mỗi bước, không xóa hoặc ghi đè dữ liệu có sẵn và không tự triển khai lên Internet.'),
@@ -59,6 +78,17 @@ PAGES = [
 
 
 def font_style(style, size, bold=False):
+    """
+    Đây là gì: hàm đặt kiểu chữ cho một "style" (kiểu chữ có tên trong Word như Normal, Title,
+      Heading 1).
+    Mục tiêu: cho cả tài liệu dùng chung phông Calibri màu đen, chỉ khác cỡ chữ và độ đậm.
+    Chức năng: ghi phông Calibri (cả cho nhóm ký tự eastAsia), cỡ chữ size, in đậm nếu bold là True,
+      màu đen.
+    Đầu ra: không trả về gì; kiểu chữ được sửa trực tiếp.
+    Dùng ở đâu: các dòng cài đặt ngay bên dưới trong cùng file, cho các kiểu Normal, Title,
+      Subtitle, Heading 1, Heading 2.
+    Liên kết với: thư viện python-docx (Pt, RGBColor, qn).
+    """
     style.font.name = 'Calibri'
     style.font.size = Pt(size)
     style.font.bold = bold
@@ -66,6 +96,7 @@ def font_style(style, size, bold=False):
     style.element.get_or_add_rPr().get_or_add_rFonts().set(qn('w:eastAsia'), 'Calibri')
 
 
+# Phần chính: tạo tài liệu, đặt khổ giấy và lề, cài kiểu chữ.
 doc = Document()
 sec = doc.sections[0]
 sec.page_width, sec.page_height = Inches(8.5), Inches(11)
@@ -99,6 +130,7 @@ doc.add_paragraph('Cách dùng', 'Heading 2')
 doc.add_paragraph('Mở một thư mục dự án mới trong Codex, sao chép nguyên đoạn dưới từng bước vào ô chat và gửi lần lượt từ bước 1 đến bước 32 trong cùng cuộc trò chuyện; đây là câu lệnh bằng ngôn ngữ tự nhiên, không phải lệnh gõ vào PowerShell.')
 doc.add_paragraph('Chờ Codex hoàn thành và báo kết quả kiểm tra trước khi gửi bước tiếp theo; khi gặp lỗi, xử lý xong lỗi của bước hiện tại trước, còn các bước cần camera hoặc máy thứ hai thì bạn phải phối hợp thử thực tế.')
 
+# Ghi từng chủ đề (mỗi chủ đề một trang) và từng bước đánh số 01..32.
 step = 0
 for page_index, (heading, entries) in enumerate(PAGES):
     if page_index:
@@ -110,6 +142,7 @@ for page_index, (heading, entries) in enumerate(PAGES):
         p = doc.add_paragraph(command)
         p.paragraph_format.keep_together = True
 
+# Kiểm tra đủ 32 bước, rồi thêm số trang ở chân trang và lưu file.
 assert step == 32
 footer = sec.footer.paragraphs[0]
 footer.alignment = 2

@@ -1,6 +1,20 @@
+/**
+ * File này vẽ dải thông báo về quyền riêng tư ở cuối trang chủ.
+ */
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   dải màu xanh nói về sự minh bạch, riêng tư và công bằng.
+ * Mục tiêu: trấn an người dùng rằng hệ thống không tự kết luận vi phạm và ưu tiên xử lý
+ *   dữ liệu ngay trên máy.
+ * Chức năng: hiện biểu tượng khiên, tiêu đề, đoạn giải thích và liên kết "Kiểm tra máy"
+ *   sang "/thi-sinh".
+ * Đầu ra: giao diện dải quyền riêng tư, có id="quyen-rieng-tu".
+ * Dùng ở đâu: HomeScreen (web/src/features/home/home-screen.tsx).
+ * Liên kết với: liên kết "Quyền riêng tư" trong home-header.tsx nhảy tới id này.
+ */
 export function PrivacyBanner() {
   return (
     <section id="quyen-rieng-tu" className="mx-auto mb-16 flex w-[min(980px,calc(100%-32px))] flex-col items-center rounded-[24px] border border-emerald-100 bg-emerald-50/70 px-6 py-8 text-center sm:flex-row sm:text-left">

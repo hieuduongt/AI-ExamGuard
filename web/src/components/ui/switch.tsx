@@ -1,9 +1,25 @@
 'use client';
+/**
+ * File này chứa "công tắc bật/tắt" (switch) dùng chung cho cả trang web.
+ * Đây là một viên gạch giao diện dùng chung (theo mẫu shadcn/ui), dựng trên thư viện Base UI;
+ * dòng đầu tiên của file báo cho Next.js biết khối này chạy trong trình duyệt (cần bấm được).
+ */
 
 import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   công tắc gạt bật/tắt.
+ * Mục tiêu: cho người dùng bật hoặc tắt một tùy chọn bằng một cú bấm.
+ * Chức năng: vẽ rãnh công tắc và nút tròn trượt sang phải khi bật; có hai cỡ size
+ *   ("default", "sm"); các props khác (checked, onCheckedChange...) chuyển cho Base UI.
+ * Đầu ra: giao diện một công tắc.
+ * Dùng ở đâu: session-form-card.tsx, live-signals-card.tsx (thí sinh),
+ *   privacy-settings-card.tsx (quản trị).
+ * Liên kết với: cn() (web/src/lib/utils.ts).
+ */
 function Switch({
   className,
   size = 'default',

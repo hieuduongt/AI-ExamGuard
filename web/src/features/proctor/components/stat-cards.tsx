@@ -1,7 +1,19 @@
+// File này vẽ hàng 5 ô số liệu ở trang giám thị: tổng máy, bình thường, cảnh báo vàng,
+// ưu tiên kiểm tra, chưa xác minh.
+
 import { AlertTriangle, BellRing, CheckCircle2, MonitorCheck, ShieldAlert } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { countStations } from '../event-filters';
 
+/**
+ * Đây là gì: React component (một khối giao diện) hàng thẻ số liệu.
+ * Mục tiêu: cho giám thị nắm tình hình cả phòng chỉ trong một cái nhìn.
+ * Chức năng: vẽ 5 thẻ, mỗi thẻ có biểu tượng, tên, màu riêng và con số luôn đủ 2 chữ số
+ *   (ví dụ "05").
+ * Đầu ra: khối giao diện hàng thẻ số liệu.
+ * Dùng ở đâu: ProctorScreen (web/src/features/proctor/proctor-screen.tsx).
+ * Liên kết với: countStations (../event-filters.ts) tính ra các con số.
+ */
 export function StatCards({ counts }: { counts: ReturnType<typeof countStations> }) {
   const statCards = [
     { Icon: MonitorCheck, label: 'Tổng máy thi', count: counts.total, tone: 'text-blue-600 bg-blue-50' },

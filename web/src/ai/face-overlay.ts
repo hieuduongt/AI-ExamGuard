@@ -1,6 +1,23 @@
+/**
+ * File này vẽ khung và các chấm đánh dấu lên trên hình camera của thí sinh, để thí sinh
+ * thấy AI đang nhìn thấy khuôn mặt mình. Thuộc phần AI (web/src/ai/): AI nhìn ảnh camera
+ * để ước lượng hướng đầu, hướng mắt; không lưu video.
+ */
 import type { FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 import { point } from './face-metrics';
 
+/**
+ * Đây là gì: hàm vẽ lớp phủ (khung mặt và chấm mắt, mũi) lên tấm vẽ (canvas) nằm trên video.
+ * Mục tiêu: cho thí sinh thấy AI đã nhận ra khuôn mặt và mắt của mình.
+ * Chức năng: xóa hình cũ; với mỗi khuôn mặt tìm thấy thì vẽ khung nét đứt quanh mặt
+ *   (mặt thứ nhất màu xanh lá, mặt thứ hai màu hồng); rồi chấm vài điểm mốc ở mũi, khóe
+ *   mắt (xanh dương) và tròng mắt (xanh lơ, to hơn).
+ * Đầu ra: không trả về gì; hình được vẽ thẳng lên canvas.
+ * Dùng ở đâu: web/src/features/candidate/hooks/use-monitoring-session.ts, sau mỗi lần AI
+ *   đọc một khung hình camera.
+ * Liên kết với: point() trong ./face-metrics.ts; số thứ tự điểm mốc theo lưới 478 điểm
+ *   khuôn mặt của MediaPipe (mô hình nhận diện điểm mốc khuôn mặt).
+ */
 export function drawOverlay(canvas: HTMLCanvasElement, result: FaceLandmarkerResult) {
   const context = canvas.getContext('2d');
   if (!context) return;

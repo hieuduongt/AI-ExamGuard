@@ -1,7 +1,21 @@
+// File này vẽ thẻ "Kiến trúc triển khai" trên trang quản trị: sơ đồ đường đi của dữ liệu
+// và trạng thái có/không dùng Firebase.
+
 import { Cloud, Database, Laptop, Network, ServerCog, Wifi } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { hasFirebaseConfig } from '@/services/exam-sync';
 
+/**
+ * Đây là gì: React component (một khối giao diện) thẻ "Kiến trúc triển khai" ở trang quản trị.
+ * Mục tiêu: giải thích ngắn gọn dữ liệu đi từ máy thí sinh đến màn hình giám thị như thế nào.
+ * Chức năng: vẽ 4 bước nối nhau (máy thí sinh, kênh sự kiện, dashboard giám thị, kho dữ liệu);
+ *   cho biết đang dùng Firebase (dịch vụ đám mây, chỉ dùng nếu có cấu hình) hay chế độ thử
+ *   trên chính máy này.
+ * Đầu ra: khối giao diện thẻ kiến trúc.
+ * Dùng ở đâu: AdminScreen (web/src/features/admin/admin-screen.tsx), cột bên phải.
+ * Liên kết với: hasFirebaseConfig (web/src/services/firebase/firebase-client.ts, xuất lại qua
+ *   services/exam-sync.ts).
+ */
 export function ArchitectureCard() {
   return (
     <Card className="border-0 bg-[#0a1b35] py-0 text-white shadow-xl shadow-slate-300/30 ring-0"><CardHeader className="border-b border-white/8 px-5 py-5"><CardTitle className="flex items-center gap-2 text-sm font-extrabold"><ServerCog className="size-4 text-cyan-300" /> Kiến trúc triển khai</CardTitle></CardHeader><CardContent className="p-5"><div className="grid gap-3">{[

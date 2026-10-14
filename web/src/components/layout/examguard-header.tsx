@@ -1,4 +1,9 @@
 'use client';
+/**
+ * File này vẽ thanh tiêu đề dùng chung cho ba màn hình: thí sinh, giám thị và quản trị.
+ * Dòng đầu tiên của file báo cho Next.js biết khối này chạy trong trình duyệt
+ * (vì cần bấm nút, mở cửa sổ mới).
+ */
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -6,8 +11,36 @@ import { openProctorWindow } from '@/services/desktop-bridge';
 import { getConfiguredHubUrl } from '@/services/exam-sync';
 import { Settings, ShieldCheck } from 'lucide-react';
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   thanh tiêu đề trên cùng có logo và nút chuyển giữa các khu vực.
+ * Mục tiêu: giúp người dùng chuyển qua lại giữa Thí sinh, Giám thị, Quản trị, nhưng không
+ *   làm gián đoạn phiên giám sát đang chạy.
+ * Chức năng: nhận props (thông tin khối cha truyền cho khối con): active = khu vực đang mở
+ *   (để tô sáng nút), monitoring = đang giám sát hay không. Khi đang giám sát thì khóa
+ *   logo về trang chủ và nút Quản trị (phải dừng giám sát trước khi đổi cấu hình). Ở màn hình
+ *   thí sinh, nút "Giám thị" đổi thành "Mở Giám thị ↗" để mở cửa sổ riêng, giữ camera chạy.
+ *   Nếu mở cửa sổ thất bại thì hiện dòng báo lỗi màu đỏ (lưu trong state openError, tức dữ
+ *   liệu màn hình đang nhớ).
+ * Đầu ra: giao diện thanh tiêu đề.
+ * Dùng ở đâu: web/src/features/candidate/candidate-screen.tsx, web/src/features/proctor/
+ *   proctor-screen.tsx, web/src/features/admin/admin-screen.tsx.
+ * Liên kết với: openProctorWindow (web/src/services/desktop-bridge.ts), getConfiguredHubUrl
+ *   (web/src/services/hub/hub-url.ts, lấy qua web/src/services/exam-sync.ts).
+ */
 export function ExamGuardHeader({ active, monitoring = false }: { active?: 'candidate' | 'proctor' | 'admin'; monitoring?: boolean }) {
   const [openError, setOpenError] = useState('');
+  /**
+   * Đây là gì: hàm con mở màn hình giám thị trong cửa sổ riêng.
+   * Mục tiêu: để thí sinh/giám thị xem màn hình giám thị cùng lúc mà camera vẫn tiếp tục
+   *   phân tích ở cửa sổ hiện tại.
+   * Chức năng: lấy địa chỉ hub (máy trung tâm của giám thị, nơi mọi máy thí sinh gửi cảnh báo
+   *   về) đã lưu, rồi nhờ openProctorWindow mở cửa sổ; đây là việc cần chờ (async). Nếu trình
+   *   duyệt chặn cửa sổ mới hoặc có lỗi thì ghi câu nhắc vào openError; mở được thì xóa lỗi.
+   * Đầu ra: không trả về gì; chỉ cập nhật openError.
+   * Dùng ở đâu: nút "Mở Giám thị ↗" ngay trong khối này (chỉ hiện khi active là 'candidate').
+   * Liên kết với: openProctorWindow (web/src/services/desktop-bridge.ts), getConfiguredHubUrl.
+   */
   async function openTeacher() {
     try {
       const opened = await openProctorWindow(getConfiguredHubUrl());

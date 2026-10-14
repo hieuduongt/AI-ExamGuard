@@ -1,3 +1,8 @@
+/**
+ * File này là khung camera trực tiếp của thí sinh trong lúc thi, kèm các nhãn trạng thái
+ * (kết nối máy giám thị, AI có chạy không, số khung hình mỗi giây).
+ * Thuộc phần giao diện thí sinh (web/src/features/candidate/components/).
+ */
 import type { RefObject } from 'react';
 import { BrainCircuit, Radio, ShieldCheck, Square, Wifi } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +11,8 @@ import type { VisionMetrics } from '@/domain/exam-types';
 import type { HubState } from '../hooks/use-hub-connection';
 import type { ModelState } from '../hooks/use-monitoring-session';
 
+// Props (thông tin khối cha truyền cho khối con) của khung camera: thông tin thí sinh,
+// trạng thái kết nối và AI, nút dừng, chỗ gắn video/lớp vẽ, các con số AI và màu trạng thái.
 type Props = {
   candidateName: string;
   candidateId: string;
@@ -22,7 +29,18 @@ type Props = {
   health: string;
 };
 
-// Live webcam with the face-landmark overlay. The video stays on this machine.
+/**
+ * Đây là gì: React component khung camera trực tiếp.
+ * Mục tiêu: cho thí sinh thấy mình trong camera và biết hệ thống đang hoạt động bình thường.
+ * Chức năng: hiện webcam trực tiếp (lật như gương) và lớp vẽ các điểm mốc khuôn mặt chồng
+ *   lên trên; hiện tên, số báo danh, phòng, máy; nhãn "Đã nối máy giám thị"/"Mất kết nối",
+ *   nhãn tình trạng AI; màn chờ khi đang tải mô hình; số khung hình AI mỗi giây; lời nhắc vị
+ *   trí ngồi; nút Dừng. Video chỉ ở lại trên máy này, không gửi đi.
+ * Đầu ra: khối giao diện khung camera.
+ * Dùng ở đâu: candidate-screen.tsx, phần hiện khi đang giám sát.
+ * Liên kết với: videoRef, canvasRef, stopMonitoring từ hooks/use-monitoring-session.ts; vẽ
+ *   điểm mốc bằng drawOverlay (web/src/ai/face-overlay.ts).
+ */
 export function CameraPanel({
   candidateName, candidateId, roomId, stationId, hubState, modelState, analysisStalled,
   stopMonitoring, videoRef, canvasRef, metrics, statusTone, health,

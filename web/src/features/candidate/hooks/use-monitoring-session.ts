@@ -1,3 +1,9 @@
+/**
+ * File này là "bộ não" của phiên giám sát trên máy thí sinh: mở webcam, cho AI đọc từng khung
+ * hình, chấm hành vi, phát cảnh báo và đều đặn báo trạng thái máy về cho giám thị.
+ * Thuộc phần logic thí sinh (web/src/features/candidate/hooks/). AI nhìn ảnh camera để ước
+ * lượng hướng đầu, hướng mắt; không lưu video.
+ */
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EMPTY_METRICS, calculateMetrics } from '@/ai/face-metrics';
@@ -13,16 +19,37 @@ import { cameraErrorMessage } from '../camera-errors';
 import { useBrowserGuard } from './use-browser-guard';
 import type { HubState } from './use-hub-connection';
 
+// Tình trạng AI: chưa chạy, đang tải mô hình, sẵn sàng, chỉ có camera (AI không tải được), lỗi.
 export type ModelState = 'idle' | 'loading' | 'ready' | 'camera-only' | 'error';
+// "Hình dạng" của hàm phát cảnh báo: loại cảnh báo, câu mô tả, và nguồn (mặc định là AI).
 export type EmitAlert = (type: AlertType, detail: string, source?: ExamEvent['source']) => void;
+// Ghi lại thời điểm gửi gần nhất của từng loại cảnh báo, để không báo lặp quá dày.
 type CooldownTimer = Partial<Record<AlertType, number>>;
 
+// Các con số AI lúc chưa có khung hình nào (mọi giá trị bằng 0).
 const initialMetrics: VisionMetrics = EMPTY_METRICS;
 
+// Thông tin trang thí sinh truyền vào: tình trạng kết nối máy giám thị và hàm đếm lại
+// số cảnh báo còn chờ gửi.
 type Options = { hubState: HubState; refreshPendingCount: () => void };
 
-// One monitoring session on the candidate machine:
-// webcam -> face landmarks -> behaviour engine -> alerts, plus a station heartbeat every 2 s.
+/**
+ * Đây là gì: hook (hàm đặc biệt của React giúp màn hình nhớ dữ liệu và tự vẽ lại khi dữ liệu
+ *   đổi) điều khiển một phiên giám sát trên máy thí sinh.
+ * Mục tiêu: theo dõi thí sinh suốt giờ thi bằng camera và trình duyệt, rồi báo cho giám thị.
+ * Chức năng: một phiên giám sát đi theo dây chuyền: webcam -> điểm mốc khuôn mặt -> bộ máy
+ *   chấm hành vi -> cảnh báo; song song, cứ 2 giây gửi "nhịp tim" trạng thái máy về giám thị.
+ *   Hook nhớ thông tin thí sinh, tình trạng AI, các con số, cảnh báo gần đây; cung cấp các
+ *   hàm bắt đầu, dừng, tạo cảnh báo thử.
+ * Đầu ra: một gói dữ liệu và hàm cho màn hình: thông tin thí sinh (kèm hàm đổi), running,
+ *   modelState, metrics, statusText, recentEvents, errorMessage, lowPowerMode,
+ *   behaviorProgress, activeThresholds, analysisStalled, health, videoRef, canvasRef,
+ *   startMonitoring, stopMonitoring, createTestAlert.
+ * Dùng ở đâu: CandidateScreen trong web/src/features/candidate/candidate-screen.tsx.
+ * Liên kết với: web/src/ai/ (tải mô hình, tính con số, vẽ điểm mốc), web/src/domain/ (bộ máy
+ *   chấm hành vi, ngưỡng, danh mục cảnh báo), publishEvent/publishStation
+ *   (web/src/services/exam-sync.ts) để gửi đi, useBrowserGuard (use-browser-guard.ts).
+ */
 export function useMonitoringSession({ hubState, refreshPendingCount }: Options) {
   const [candidateName, setCandidateName] = useState('');
   const [candidateId, setCandidateId] = useState('');
@@ -40,6 +67,10 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
   const [activeThresholds, setActiveThresholds] = useState(DEFAULT_THRESHOLDS);
   const [analysisStalled, setAnalysisStalled] = useState(false);
 
+  // Các "ngăn nhớ" (ref): giữ giá trị giữa các lần vẽ lại màn hình mà không làm màn hình vẽ
+  // lại. Vòng lặp AI chạy liên tục nên đọc dữ liệu mới nhất từ đây thay vì từ state.
+  // sessionRef là số thứ tự phiên: tăng mỗi lần bắt đầu/dừng, để việc chờ của phiên cũ biết
+  // mình đã lỗi thời mà dừng lại.
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -61,13 +92,36 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
   const alertCountRef = useRef(0);
   const thresholdsRef = useRef<BehaviorThresholds>(DEFAULT_THRESHOLDS);
 
+  // Mỗi khi thí sinh sửa thông tin, chép thông tin mới vào ngăn nhớ identityRef.
   useEffect(() => { identityRef.current = { candidateName, candidateId, stationId, roomId }; }, [candidateId, candidateName, roomId, stationId]);
 
+  /**
+   * Đây là gì: giá trị "sức khỏe" tức thời của máy, được tính lại khi con số AI thay đổi.
+   * Mục tiêu: tô màu khung camera và chấm trạng thái trên trang thí sinh.
+   * Chức năng: chưa giám sát thì là 'idle'; đang giám sát thì chấm theo khung hình hiện tại.
+   * Đầu ra: 'idle', 'normal', 'warning' hoặc 'critical'.
+   * Dùng ở đâu: trả ra cho candidate-screen.tsx (màu statusTone) và components/camera-panel.tsx.
+   * Liên kết với: classifyMetrics (web/src/domain/station-health.ts).
+   */
   const health = useMemo(() => {
     if (!running) return 'idle';
     return classifyMetrics(metrics);
   }, [metrics, running]);
 
+  /**
+   * Đây là gì: hàm con phát một cảnh báo mới.
+   * Mục tiêu: tạo cảnh báo đầy đủ thông tin và gửi về giám thị, nhưng không báo lặp quá dày.
+   * Chức năng: với cảnh báo thật (không phải 'demo'), nếu cùng loại vừa gửi chưa quá
+   *   cooldownSeconds giây thì bỏ qua, ngược lại ghi lại thời điểm gửi. Sau đó tăng bộ đếm
+   *   cảnh báo, ghép thông tin thí sinh + loại + mức độ + tiêu đề + mô tả + thời điểm thành
+   *   một cảnh báo có mã riêng, gửi đi, đếm lại hàng chờ, và đưa lên đầu danh sách 6 cảnh
+   *   báo gần nhất trên màn hình.
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: evaluateBehavior và createTestAlert trong file này; useBrowserGuard
+   *   (use-browser-guard.ts) cho cảnh báo từ trình duyệt.
+   * Liên kết với: alertSeverity, ALERT_LABELS (web/src/domain/alert-catalog.ts); makeId,
+   *   publishEvent (web/src/services/exam-sync.ts); refreshPendingCount (use-delivery-status.ts).
+   */
   const emitAlert = useCallback((type: AlertType, detail: string, source: ExamEvent['source'] = 'ai') => {
     const now = Date.now();
     const lastSent = cooldownsRef.current[type] ?? 0;
@@ -92,6 +146,17 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     setRecentEvents((events) => [event, ...events].slice(0, 6));
   }, [refreshPendingCount]);
 
+  /**
+   * Đây là gì: hàm con chấm hành vi cho một khung hình vừa phân tích.
+   * Mục tiêu: biến các con số AI thành tiến trình hành vi và cảnh báo khi đủ thời gian.
+   * Chức năng: đưa con số mới và ngưỡng đang dùng vào bộ máy chấm hành vi; lưu tiến trình
+   *   vào ngăn nhớ và lên màn hình; với mỗi hành vi đã đủ thời gian thì phát cảnh báo kèm câu
+   *   mô tả chi tiết.
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: detectionLoop ngay bên dưới, sau mỗi khung hình phân tích thành công.
+   * Liên kết với: BehaviorEngine.update và behaviorDetail (web/src/domain/behavior-engine.ts),
+   *   emitAlert ở trên.
+   */
   const evaluateBehavior = useCallback((nextMetrics: VisionMetrics, now: number) => {
     const result = engineRef.current.update(nextMetrics, now, thresholdsRef.current);
     progressRef.current = result.progress;
@@ -99,6 +164,19 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     for (const item of result.triggered) emitAlert(item.type, behaviorDetail(item, nextMetrics));
   }, [emitAlert]);
 
+  /**
+   * Đây là gì: hàm con gửi "nhịp tim" trạng thái máy thí sinh về giám thị.
+   * Mục tiêu: giám thị luôn thấy máy này còn sống, AI có chạy không, và các con số mới nhất.
+   * Chức năng: xem AI có khung hình mới trong 3 giây qua không: AI sẵn sàng mà không có khung
+   *   hình mới là "tạm dừng" (stalled); AI đang tải là 'loading'; còn lại là 'error'. Nếu AI
+   *   không ở trạng thái sẵn sàng thì màu máy là vàng, ngược lại chấm màu theo khung hình.
+   *   Gửi trạng thái đi (kèm tiến trình hành vi chỉ khi dữ liệu còn mới); nếu AI tạm dừng thì
+   *   báo cho thí sinh và xóa thanh tiến trình; cuối cùng đếm lại hàng chờ gửi.
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: hiệu ứng chạy mỗi 2 giây khi đang giám sát (bên dưới trong file này).
+   * Liên kết với: classifyMetrics (web/src/domain/station-health.ts), publishStation
+   *   (web/src/services/exam-sync.ts), kiểu StationStatus (web/src/domain/exam-types.ts).
+   */
   const updateStation = useCallback((nextMetrics: VisionMetrics) => {
     const identity = identityRef.current;
     const fresh = lastAnalyzedRef.current > 0 && Date.now() - lastAnalyzedRef.current < 3000;
@@ -117,6 +195,21 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     refreshPendingCount();
   }, [refreshPendingCount]);
 
+  /**
+   * Đây là gì: hàm con "vòng lặp AI", chạy lặp đi lặp lại suốt phiên giám sát.
+   * Mục tiêu: liên tục cho AI đọc khung hình camera mới nhất.
+   * Chức năng: dừng nếu phiên đã tắt. Nếu video, lớp vẽ và mô hình đều sẵn sàng và có khung
+   *   hình mới thì: đếm số khung hình mỗi giây (fps); cho AI tìm điểm mốc khuôn mặt; vẽ điểm
+   *   mốc lên lớp vẽ; tính các con số; lưu lại, xóa lỗi cũ, cập nhật màn hình và chấm hành
+   *   vi. Nếu AI lỗi thì ghi lỗi và báo cho thí sinh. Cuối cùng hẹn lần chạy tiếp sau 80 mili
+   *   giây (160 mili giây ở chế độ máy cấu hình thấp).
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: qua ngăn nhớ detectionLoopRef: startMonitoring gọi lần đầu, rồi vòng lặp tự
+   *   hẹn giờ gọi lại chính nó.
+   * Liên kết với: calculateMetrics (web/src/ai/face-metrics.ts), drawOverlay
+   *   (web/src/ai/face-overlay.ts), FaceLandmarker của MediaPipe (mô hình nhận diện điểm mốc
+   *   khuôn mặt), evaluateBehavior ở trên.
+   */
   const detectionLoop = useCallback(() => {
     if (!runningRef.current) return;
     const video = videoRef.current;
@@ -157,8 +250,22 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     animationRef.current = window.setTimeout(() => detectionLoopRef.current(), frameInterval);
   }, [evaluateBehavior, lowPowerMode]);
 
+  // Luôn giữ bản mới nhất của vòng lặp AI trong ngăn nhớ (ví dụ khi bật/tắt chế độ máy yếu),
+  // để lần hẹn giờ tiếp theo gọi đúng bản mới.
   useEffect(() => { detectionLoopRef.current = detectionLoop; }, [detectionLoop]);
 
+  /**
+   * Đây là gì: hàm con dừng phiên giám sát.
+   * Mục tiêu: tắt camera, tắt AI gọn gàng và báo cho giám thị biết máy này đã dừng.
+   * Chức năng: tăng số thứ tự phiên (để mọi việc đang chờ của phiên cũ tự bỏ), dừng vòng lặp
+   *   AI, tắt webcam, đóng mô hình AI, xóa bộ máy chấm hành vi và tiến trình, đưa màn hình về
+   *   trạng thái "đã dừng". Nếu trước đó đang chạy thì gửi trạng thái 'offline' về giám thị.
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: nút Dừng trong components/camera-panel.tsx; tự gọi khi rời trang (hiệu ứng
+   *   ngay bên dưới).
+   * Liên kết với: BehaviorEngine.reset (web/src/domain/behavior-engine.ts), publishStation
+   *   (web/src/services/exam-sync.ts).
+   */
   const stopMonitoring = useCallback(() => {
     const wasRunning = runningRef.current;
     sessionRef.current += 1;
@@ -178,10 +285,13 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     if (wasRunning) publishStation({ ...identity, state: 'offline', analysisState: 'stopped', analysisMessage: 'Phiên giám sát đã dừng', metrics: metricsRef.current, lastSeen: Date.now(), alertCount: alertCountRef.current });
   }, []);
 
+  // Khi rời trang thí sinh thì tự dừng phiên, để camera không bị bỏ mở.
   useEffect(() => () => stopMonitoring(), [stopMonitoring]);
 
+  // Canh trình duyệt (rời cửa sổ, phím tắt bị hạn chế) trong lúc giám sát.
   useBrowserGuard(running, emitAlert);
 
+  // Khi đang giám sát: gửi nhịp tim trạng thái máy ngay, rồi cứ 2 giây gửi lại một lần.
   useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => updateStation(metricsRef.current), 2000);
@@ -189,6 +299,24 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     return () => window.clearInterval(timer);
   }, [running, updateStation]);
 
+  /**
+   * Đây là gì: hàm con bắt đầu phiên giám sát.
+   * Mục tiêu: mở webcam, tải AI và bắt đầu theo dõi khi thí sinh bấm nút bắt đầu.
+   * Chức năng: chỉ chạy khi đã đồng ý giám sát, AI không đang tải, và (nếu không dùng Firebase)
+   *   đã nối được máy giám thị. Chuẩn hóa thông tin thí sinh (bỏ khoảng trắng thừa, số báo
+   *   danh/phòng/máy viết hoa); tạo số thứ tự phiên mới; xóa sạch dữ liệu phiên cũ; đọc ngưỡng
+   *   do quản trị lưu. Sau đó xin quyền mở webcam (việc cần chờ), gắn hình vào thẻ video và bật
+   *   lên; rồi tải mô hình AI và chạy vòng lặp AI. Nếu AI không tải được thì vẫn giữ camera
+   *   ("chỉ có camera") và báo lỗi; nếu webcam không mở được thì tắt mọi thứ và báo lỗi dễ
+   *   hiểu. Sau mỗi bước phải chờ, nếu số thứ tự phiên đã đổi (thí sinh bấm dừng giữa chừng)
+   *   thì bỏ ngang và tắt những gì vừa mở.
+   * Đầu ra: việc cần chờ, không mang giá trị; kết quả thể hiện qua running, modelState,
+   *   statusText, errorMessage.
+   * Dùng ở đâu: nút "Kiểm tra webcam và bắt đầu" trong components/session-form-card.tsx.
+   * Liên kết với: parseSavedThresholds, SETTINGS_STORAGE_KEY (web/src/domain/thresholds.ts);
+   *   loadFaceLandmarker (web/src/ai/face-landmarker-loader.ts); cameraErrorMessage
+   *   (../camera-errors.ts); detectionLoop ở trên.
+   */
   async function startMonitoring() {
     if (!consented || modelStateRef.current === 'loading') return;
     if (!hasFirebaseConfig && hubState !== 'connected') {
@@ -269,6 +397,15 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     }
   }
 
+  /**
+   * Đây là gì: hàm con tạo một cảnh báo thử.
+   * Mục tiêu: giúp kiểm tra đường truyền cảnh báo từ máy thí sinh tới máy giám thị.
+   * Chức năng: phát cảnh báo với nguồn 'demo' (không bị giới hạn khoảng nghỉ giữa hai lần
+   *   báo) và câu mô tả ghi rõ đây là sự kiện thử.
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: hai nút "Thử cảnh báo vàng/đỏ" trong components/recent-events-card.tsx.
+   * Liên kết với: emitAlert ở trên.
+   */
   function createTestAlert(type: AlertType) {
     emitAlert(type, 'Sự kiện thử do thí sinh tạo để kiểm tra đường truyền.', 'demo');
   }

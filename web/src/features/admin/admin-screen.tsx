@@ -1,5 +1,9 @@
 'use client';
 
+// File này vẽ toàn bộ trang quản trị (/quan-tri): nơi người quản trị đặt tên phòng thi,
+// số máy, các ngưỡng cảnh báo của AI và lựa chọn về quyền riêng tư.
+// Mọi cài đặt chỉ được lưu trong trình duyệt đang mở trang này.
+
 import { useEffect, useState } from 'react';
 import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import type { BehaviorThresholds } from '@/domain/exam-types';
@@ -13,7 +17,20 @@ import { RolesCard } from './components/roles-card';
 import { RoomSettingsCard } from './components/room-settings-card';
 import { ThresholdSettingsCard } from './components/threshold-settings-card';
 
-// Admin page (/quan-tri): room, thresholds and privacy settings saved in this browser.
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   của cả trang quản trị (/quan-tri).
+ * Mục tiêu: cho người quản trị chỉnh tên phòng, số máy, ngưỡng cảnh báo và quyền riêng tư,
+ *   rồi lưu lại trong chính trình duyệt này.
+ * Chức năng: nhớ các cài đặt bằng state (dữ liệu màn hình đang nhớ); khi mở trang thì đọc
+ *   cài đặt cũ từ localStorage (bộ nhớ nhỏ của trình duyệt, tắt máy vẫn còn); ghép các thẻ
+ *   cài đặt con; có nút "Lưu thay đổi" và "Xuất cấu hình".
+ * Đầu ra: giao diện trang quản trị hoàn chỉnh.
+ * Dùng ở đâu: web/src/app/quan-tri/page.tsx.
+ * Liên kết với: admin-settings.ts (đọc, kiểm tra, xuất cấu hình), domain/thresholds.ts
+ *   (ngưỡng mặc định, khóa lưu SETTINGS_STORAGE_KEY; trang thí sinh đọc lại ngưỡng từ đó),
+ *   các thẻ trong components/.
+ */
 export function AdminScreen() {
   const [settings, setSettings] = useState<BehaviorThresholds>(DEFAULT_THRESHOLDS);
   const [roomName, setRoomName] = useState('Phòng thi 01');
@@ -22,6 +39,7 @@ export function AdminScreen() {
   const [requireConsent, setRequireConsent] = useState(true);
   const [saved, setSaved] = useState(false);
 
+  // Khi trang vừa mở: đọc cài đặt đã lưu (nếu có) và đổ vào các ô; đọc hỏng thì giữ mặc định.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
@@ -39,17 +57,44 @@ export function AdminScreen() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  /**
+   * Đây là gì: hàm con đổi một ngưỡng cảnh báo.
+   * Mục tiêu: cập nhật ngay con số người quản trị vừa gõ vào ô ngưỡng.
+   * Chức năng: bỏ dấu "Đã lưu"; ép số vào khoảng 1–60 giây rồi ghi vào đúng ngưỡng (key).
+   * Đầu ra: không trả về gì; state settings được cập nhật.
+   * Dùng ở đâu: truyền cho ThresholdSettingsCard (components/threshold-settings-card.tsx).
+   * Liên kết với: clampThresholdSeconds trong admin-settings.ts.
+   */
   function updateThreshold(key: keyof BehaviorThresholds, value: string) {
     setSaved(false);
     setSettings((current) => ({ ...current, [key]: clampThresholdSeconds(value) }));
   }
 
+  /**
+   * Đây là gì: hàm con lưu cài đặt.
+   * Mục tiêu: giữ lại cài đặt để lần sau mở trang (và trang thí sinh trên cùng trình duyệt)
+   *   dùng được.
+   * Chức năng: ghi tất cả cài đặt vào localStorage dưới khóa SETTINGS_STORAGE_KEY; bật dấu
+   *   "Đã lưu" rồi tự tắt sau 3 giây.
+   * Đầu ra: không trả về gì.
+   * Dùng ở đâu: nút "Lưu thay đổi" trong AdminHeading (components/admin-heading.tsx).
+   * Liên kết với: domain/thresholds.ts (SETTINGS_STORAGE_KEY, parseSavedThresholds đọc lại
+   *   ngưỡng), parseAdminSettings trong admin-settings.ts.
+   */
   function saveSettings() {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ thresholds: settings, roomName, stationCount, storeSnapshots, requireConsent }));
     setSaved(true);
     window.setTimeout(() => setSaved(false), 3000);
   }
 
+  /**
+   * Đây là gì: hàm con xuất cấu hình ra file.
+   * Mục tiêu: cho người quản trị tải cấu hình về máy để cất giữ hoặc chia sẻ.
+   * Chức năng: gom các cài đặt hiện tại và nhờ downloadConfig tải file JSON xuống.
+   * Đầu ra: không trả về gì; trình duyệt tải về file ai-examguard-config.json.
+   * Dùng ở đâu: nút "Xuất cấu hình" trong AdminHeading (components/admin-heading.tsx).
+   * Liên kết với: downloadConfig trong admin-settings.ts.
+   */
   function exportConfig() {
     downloadConfig({ roomName, stationCount, settings, storeSnapshots, requireConsent });
   }

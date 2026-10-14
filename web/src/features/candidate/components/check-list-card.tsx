@@ -1,7 +1,20 @@
+/**
+ * File này là thẻ giới thiệu những gì hệ thống sẽ theo dõi trong giờ thi.
+ * Thuộc phần giao diện thí sinh (web/src/features/candidate/components/).
+ */
 import { Check, Eye, Keyboard, LockKeyhole, RotateCcw, ScanFace } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// What the system watches for; static explanation shown before the exam starts.
+/**
+ * Đây là gì: React component thẻ "Hệ thống sẽ kiểm tra".
+ * Mục tiêu: giúp thí sinh hiểu trước mình được theo dõi những gì, để yên tâm và ngồi đúng tư thế.
+ * Chức năng: hiện lời giải thích cố định (không đổi theo dữ liệu), chỉ hiện trước khi bắt
+ *   đầu thi: 4 nhóm tín hiệu (khuôn mặt, hướng nhìn, tư thế đầu, thao tác trình duyệt) và
+ *   lời cam kết video không bị truyền liên tục lên máy giám thị.
+ * Đầu ra: khối giao diện thẻ danh sách kiểm tra.
+ * Dùng ở đâu: candidate-screen.tsx, bên cạnh biểu mẫu thông tin phiên thi.
+ * Liên kết với: các loại cảnh báo trong web/src/domain/alert-catalog.ts (mô tả bằng lời thường).
+ */
 export function CheckListCard() {
   return (
     <Card className="border-0 bg-[#091a34] py-0 text-white shadow-xl shadow-slate-300/30 ring-0">

@@ -1,5 +1,18 @@
+/**
+ * File này vẽ dải "ba điểm nổi bật" trên trang chủ: nhóm hành vi theo dõi, phân tích ngay
+ * trên máy, và con người là người quyết định cuối cùng.
+ */
 import { BrainCircuit, Eye, LockKeyhole } from 'lucide-react';
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   hiện ba thẻ tính năng nổi bật.
+ * Mục tiêu: giúp người xem hiểu nhanh hệ thống theo dõi gì và tôn trọng quyền riêng tư ra sao.
+ * Chức năng: từ một danh sách ba mục (biểu tượng, tiêu đề, mô tả), vẽ ra ba thẻ nằm cạnh nhau.
+ * Đầu ra: giao diện dải tính năng, có id="tinh-nang".
+ * Dùng ở đâu: HomeScreen (web/src/features/home/home-screen.tsx).
+ * Liên kết với: liên kết "Tính năng" trong home-header.tsx nhảy tới id="tinh-nang" này.
+ */
 export function FeatureHighlights() {
   return (
     <section id="tinh-nang" className="relative -mt-7 pb-16 sm:-mt-9">

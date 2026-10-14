@@ -1,7 +1,24 @@
+/**
+ * File này chứa "thẻ" (card): khung bo góc có nền trắng để gom một nhóm nội dung, cùng các
+ * phần con của thẻ (đầu thẻ, tiêu đề, mô tả, nút góc phải, thân thẻ, chân thẻ).
+ * Đây là một viên gạch giao diện dùng chung (theo mẫu shadcn/ui); các phần con được đánh dấu
+ * bằng data-slot để thẻ tự căn lề cho đúng.
+ */
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   khung thẻ ngoài cùng.
+ * Mục tiêu: gom một nhóm nội dung liên quan vào một khung gọn, dễ nhìn.
+ * Chức năng: vẽ khung bo góc có viền mờ; size "sm" thì khoảng cách bên trong nhỏ hơn;
+ *   ghép thêm className bằng cn().
+ * Đầu ra: giao diện khung thẻ, bên trong chứa các phần con.
+ * Dùng ở đâu: nhiều thẻ ở màn hình thí sinh, giám thị, quản trị (ví dụ session-form-card.tsx,
+ *   station-grid.tsx, threshold-settings-card.tsx).
+ * Liên kết với: CardHeader, CardContent... bên dưới; cn() (web/src/lib/utils.ts).
+ */
 function Card({
   className,
   size = 'default',
@@ -20,6 +37,14 @@ function Card({
   );
 }
 
+/**
+ * Đây là gì: React component phần đầu thẻ.
+ * Mục tiêu: đặt tiêu đề và mô tả của thẻ ở trên cùng.
+ * Chức năng: xếp tiêu đề, mô tả; nếu có CardAction thì chia thêm cột bên phải cho nó.
+ * Đầu ra: giao diện phần đầu thẻ.
+ * Dùng ở đâu: bên trong Card ở hầu hết các thẻ (ví dụ check-list-card.tsx, event-feed.tsx).
+ * Liên kết với: Card, CardTitle, CardDescription, CardAction.
+ */
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -33,6 +58,14 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Đây là gì: React component tiêu đề của thẻ.
+ * Mục tiêu: cho biết thẻ nói về chuyện gì.
+ * Chức năng: hiện chữ đậm vừa; chữ nhỏ hơn khi thẻ có size "sm".
+ * Đầu ra: giao diện dòng tiêu đề.
+ * Dùng ở đâu: trong CardHeader ở hầu hết các thẻ (ví dụ live-signals-card.tsx, roles-card.tsx).
+ * Liên kết với: CardHeader, Card.
+ */
 function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -46,6 +79,15 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Đây là gì: React component dòng mô tả ngắn dưới tiêu đề thẻ.
+ * Mục tiêu: giải thích thêm cho tiêu đề.
+ * Chức năng: hiện chữ nhỏ màu xám.
+ * Đầu ra: giao diện dòng mô tả.
+ * Dùng ở đâu: session-form-card.tsx, check-list-card.tsx (thí sinh) và các thẻ cài đặt
+ *   ở web/src/features/admin/.
+ * Liên kết với: CardHeader, CardTitle.
+ */
 function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -56,6 +98,14 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Đây là gì: React component chỗ đặt nút nhỏ ở góc phải phần đầu thẻ.
+ * Mục tiêu: để thao tác phụ (ví dụ nút "xem thêm") nằm gọn cạnh tiêu đề.
+ * Chức năng: đặt nội dung vào cột phải, căn trên cùng.
+ * Đầu ra: giao diện vùng nút góc phải.
+ * Dùng ở đâu: hiện chưa có màn hình nào dùng; có sẵn theo bộ mẫu shadcn/ui.
+ * Liên kết với: CardHeader (tự chia cột khi có khối này).
+ */
 function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -69,6 +119,14 @@ function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Đây là gì: React component phần thân thẻ.
+ * Mục tiêu: chứa nội dung chính của thẻ.
+ * Chức năng: thêm khoảng cách hai bên cho đều với phần đầu thẻ.
+ * Đầu ra: giao diện phần thân thẻ.
+ * Dùng ở đâu: hầu hết các thẻ (ví dụ stat-cards.tsx, recent-events-card.tsx, roles-card.tsx).
+ * Liên kết với: Card.
+ */
 function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -79,6 +137,14 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
+/**
+ * Đây là gì: React component phần chân thẻ.
+ * Mục tiêu: đặt các nút hoặc ghi chú cuối thẻ, tách khỏi nội dung chính.
+ * Chức năng: vẽ dải nền xám nhạt có đường kẻ phía trên.
+ * Đầu ra: giao diện phần chân thẻ.
+ * Dùng ở đâu: hiện chưa có màn hình nào dùng; có sẵn theo bộ mẫu shadcn/ui.
+ * Liên kết với: Card (tự bỏ khoảng trống dưới cùng khi có chân thẻ).
+ */
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div

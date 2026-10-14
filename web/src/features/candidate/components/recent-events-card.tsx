@@ -1,11 +1,27 @@
+/**
+ * File này là thẻ "Sự kiện trên máy này": các cảnh báo gần đây của máy thí sinh và việc
+ * giám thị đã nhận được chưa. Thuộc phần giao diện thí sinh
+ * (web/src/features/candidate/components/).
+ */
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AlertType, ExamEvent } from '@/domain/exam-types';
 
+// Props: các cảnh báo gần đây, danh sách mã cảnh báo giám thị đã nhận, hàm tạo cảnh báo thử.
 type Props = { recentEvents: ExamEvent[]; deliveredIds: string[]; createTestAlert: (type: AlertType) => void };
 
-// Alerts raised on this machine and whether the proctor has received them.
+/**
+ * Đây là gì: React component thẻ các cảnh báo trên máy này.
+ * Mục tiêu: cho thí sinh biết máy mình đã phát cảnh báo nào và giám thị đã nhận chưa.
+ * Chức năng: liệt kê các cảnh báo gần đây (chấm màu theo mức độ, tiêu đề, giờ), mỗi cái ghi
+ *   "Giám thị đã nhận" hoặc "Đang chờ gửi đến giám thị"; nếu chưa có thì hiện lời động viên.
+ *   Có mục thu gọn "Kiểm tra đường truyền cảnh báo" với 2 nút gửi cảnh báo thử vàng và đỏ.
+ * Đầu ra: khối giao diện thẻ sự kiện.
+ * Dùng ở đâu: candidate-screen.tsx, cột bên phải khi đang giám sát.
+ * Liên kết với: recentEvents và createTestAlert từ hooks/use-monitoring-session.ts;
+ *   deliveredIds từ hooks/use-delivery-status.ts.
+ */
 export function RecentEventsCard({ recentEvents, deliveredIds, createTestAlert }: Props) {
   return (
     <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200/80">

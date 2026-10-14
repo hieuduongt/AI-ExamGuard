@@ -1,18 +1,39 @@
+/**
+ * File này vẽ hình minh họa màn hình giám thị trên trang chủ.
+ * Đây chỉ là hình minh họa cố định, không phải dữ liệu thật đang diễn ra.
+ */
 import { BrainCircuit, Eye, MonitorCheck, Video } from 'lucide-react';
 
-// Static illustration of the proctor dashboard; not live data.
+/**
+ * Danh sách 15 máy thi mẫu, mỗi máy gồm tên và trạng thái:
+ * "ok" = bình thường (xanh lá), "warn" = cảnh báo (vàng), "danger" = cần kiểm tra (đỏ).
+ */
 const seats = [
   ['PC-01', 'ok'], ['PC-02', 'ok'], ['PC-03', 'danger'], ['PC-04', 'ok'], ['PC-05', 'ok'],
   ['PC-06', 'ok'], ['PC-07', 'warn'], ['PC-08', 'ok'], ['PC-09', 'ok'], ['PC-10', 'ok'],
   ['PC-11', 'ok'], ['PC-12', 'warn'], ['PC-13', 'ok'], ['PC-14', 'ok'], ['PC-15', 'ok'],
 ] as const;
 
+/**
+ * Ba cảnh báo mẫu: [tên máy, nội dung, giờ, loại]. Loại "eye" hiện biểu tượng con mắt,
+ * các loại khác hiện biểu tượng camera; màu theo loại (đỏ, vàng, xanh).
+ */
 const alerts = [
   ['PC-07', 'Quay đầu phải kéo dài', '10:21:14', 'warn'],
   ['PC-12', 'Hướng mắt lệch phải', '10:20:33', 'eye'],
   ['PC-03', 'Không có mặt trước máy', '10:19:58', 'danger'],
 ] as const;
 
+/**
+ * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
+ *   vẽ một màn hình giám thị thu nhỏ để minh họa.
+ * Mục tiêu: cho người xem hình dung màn hình giám thị trông thế nào trước khi dùng thật.
+ * Chức năng: vẽ lưới 15 máy thi tô màu theo trạng thái (từ seats) và danh sách "Sự kiện cần
+ *   chú ý" (từ alerts). Dữ liệu là cố định, không kết nối mạng hay camera.
+ * Đầu ra: giao diện khung minh họa.
+ * Dùng ở đâu: HeroSection (web/src/features/home/components/hero-section.tsx).
+ * Liên kết với: màn hình giám thị thật ở web/src/features/proctor/ (hình này mô phỏng nó).
+ */
 export function DashboardPreview() {
   return (
     <div className="relative">

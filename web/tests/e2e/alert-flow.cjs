@@ -1,14 +1,41 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Run with: node tests/e2e/alert-flow.cjs STUDENT_ORIGIN TEACHER_ORIGIN
-// Set PLAYWRIGHT_MODULE to a preinstalled Playwright module directory if needed.
-// Set E2E_BROWSER_CHANNEL=chrome on machines without Microsoft Edge.
+/**
+ * Đây là gì: bài kiểm thử toàn luồng (e2e, "từ đầu đến cuối") của AI ExamGuard. Máy tự mở trình
+ *   duyệt thật, đóng vai cả thí sinh lẫn giám thị, rồi bấm nút như người dùng thật.
+ * Mục tiêu: chứng minh cả chuỗi chạy đúng: thí sinh kết nối với máy giám thị (hub: máy trung tâm
+ *   của giám thị, nơi mọi máy thí sinh gửi cảnh báo về) -> AI phân tích camera -> mở cửa sổ giám
+ *   thị -> cảnh báo "không có mặt" tới giám thị -> video đứng thì báo "AI đã tạm dừng" -> mất mạng
+ *   rồi gửi lại -> bấm Dừng.
+ * Chức năng: dùng thư viện Playwright (điều khiển trình duyệt tự động) với camera giả. Phần AI
+ *   (MediaPipe: mô hình nhận diện điểm mốc khuôn mặt) là thật; AI nhìn ảnh camera để ước lượng
+ *   hướng đầu, hướng mắt, không lưu video. Phần quay đầu dùng số liệu giả lập đưa vào bộ đếm thật.
+ * Đầu ra: in "PASS: ..." cho từng chặng; nếu sai thì in lỗi và kết thúc với mã lỗi 1.
+ * Dùng ở đâu: chạy tay, không nằm trong `npm test`. Lệnh chạy (trong thư mục web):
+ *   node tests/e2e/alert-flow.cjs ĐỊA_CHỈ_THÍ_SINH ĐỊA_CHỈ_GIÁM_THỊ
+ *   Đặt biến PLAYWRIGHT_MODULE tới thư mục Playwright đã cài sẵn nếu cần.
+ *   Đặt biến E2E_BROWSER_CHANNEL=chrome trên máy không có Microsoft Edge.
+ * Liên kết với: hai địa chỉ máy chủ thử do desktop-hub/tests/serve_hub.py mở ra (hướng dẫn ở
+ *   docs/van-hanh/chay-va-build.md); trang /thi-sinh và /giam-thi;
+ *   web/tests/helpers/load-source.cjs.
+ */
 const assert = require('node:assert/strict');
 const { browserBundle } = require('../helpers/load-source.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const [studentUrl, teacherUrl] = process.argv.slice(2);
 if (!studentUrl || !teacherUrl) throw new Error('Pass two isolated test-server origins');
+// Mã thí sinh riêng cho lần chạy này (gắn giờ hiện tại) để không lẫn với dữ liệu cũ.
 const qaId = `QA-${Date.now()}`;
 
+/**
+ * Đây là gì: hàm "chờ cho đến khi" một điều kiện đúng.
+ * Mục tiêu: trang web và mạng cần thời gian; bài kiểm thử phải chờ thay vì kiểm tra ngay.
+ * Chức năng: cứ 0,25 giây lại hỏi hàm check một lần; đúng thì dừng chờ. Quá thời hạn timeout
+ *   (mặc định 45 giây) thì báo lỗi "Timed out" (hết giờ) kèm tên label để biết chặng nào hỏng.
+ *   Đây là việc cần chờ (async), như chờ mạng trả lời.
+ * Đầu ra: không trả về gì khi thành công; báo lỗi khi hết giờ.
+ * Dùng ở đâu: hầu hết các bước trong phần chạy chính của file này.
+ * Liên kết với: hàm snapshot (thường được gọi bên trong check).
+ */
 async function until(check, label, timeout = 45000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
@@ -17,10 +44,29 @@ async function until(check, label, timeout = 45000) {
   }
   throw new Error(`Timed out: ${label}`);
 }
+/**
+ * Đây là gì: hàm hỏi máy giám thị "hiện đang có những gì".
+ * Mục tiêu: kiểm tra dữ liệu thật đã tới máy giám thị, không chỉ nhìn giao diện.
+ * Chức năng: gửi yêu cầu tới cửa giao tiếp (API) /api/snapshot của máy giám thị.
+ * Đầu ra: dữ liệu gồm danh sách máy thí sinh (stations) và cảnh báo (events).
+ * Dùng ở đâu: nhiều bước until(...) trong phần chạy chính của file này.
+ * Liên kết với: API /api/snapshot của hub trong desktop-hub/.
+ */
 async function snapshot() { return (await fetch(`${teacherUrl}/api/snapshot`)).json(); }
 
+/**
+ * Đây là gì: hàm tạo đoạn script chứa code thật của trang web để chèn vào trang thí sinh.
+ * Mục tiêu: chạy đúng những file mà sản phẩm thật dùng, không dùng cửa nhận cảnh báo giả.
+ * Chức năng: đóng gói ngưỡng (thresholds), danh mục cảnh báo (alert-catalog), bộ máy chấm hành vi
+ *   (behavior-engine) và phần gửi/nhận dữ liệu (exam-sync); thay Firebase (dịch vụ đám mây) bằng
+ *   bản giả "không có cấu hình".
+ * Đầu ra: chuỗi code; khi chạy trong trang sẽ tạo window.qaModules.
+ * Dùng ở đâu: bước kiểm thử quay đầu trong phần chạy chính của file này (addScriptTag).
+ * Liên kết với: browserBundle trong web/tests/helpers/load-source.cjs; các file web/src/domain/
+ *   thresholds.ts, alert-catalog.ts, behavior-engine.ts và web/src/services/exam-sync.ts.
+ */
 function injectedModules() {
-  // Execute the same source modules that production uses; no fake event endpoint.
+  // Chạy đúng các file nguồn mà bản thật dùng; không có cửa nhận cảnh báo giả.
   return browserBundle({
     thresholds: 'src/domain/thresholds.ts',
     catalog: 'src/domain/alert-catalog.ts',
@@ -32,6 +78,7 @@ function injectedModules() {
   });
 }
 
+// Phần chạy chính: mở trình duyệt, đi lần lượt từng chặng, in "PASS" sau mỗi chặng đạt.
 (async () => {
   const browser = await chromium.launch({ channel: process.env.E2E_BROWSER_CHANNEL || 'msedge', headless: true, args: [
     '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--disable-gpu',
@@ -83,8 +130,8 @@ function injectedModules() {
     await until(async () => (await snapshot()).stations.some((s) => s.candidateId === qaId && s.analysisState === 'ready'), 'analysis resumes');
     console.log('PASS: frozen analysis is visible on both sides and resumes with fresh frames');
 
-    // Head-turn input is deterministic synthetic metrics, explicitly distinct
-    // from the real MediaPipe camera test above.
+    // Dữ liệu quay đầu ở đây là số liệu giả lập, lần nào chạy cũng giống nhau; nó tách biệt
+    // rõ ràng với phần thử camera bằng MediaPipe thật ở trên.
     await pupil.addScriptTag({ content: injectedModules() });
     let blocked = true;
     await pupil.route('**/api/events', (route) => blocked ? route.abort('failed') : route.continue());

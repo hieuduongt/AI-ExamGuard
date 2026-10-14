@@ -1,3 +1,8 @@
+/**
+ * File này là thẻ "Thông tin phiên thi" trước giờ thi: thí sinh nhập họ tên, số báo danh,
+ * phòng, máy, đồng ý giám sát rồi bấm bắt đầu. Thuộc phần giao diện thí sinh
+ * (web/src/features/candidate/components/).
+ */
 import type { ReactNode } from 'react';
 import { AlertTriangle, Play, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +13,8 @@ import { hasFirebaseConfig } from '@/services/exam-sync';
 import type { HubState } from '../hooks/use-hub-connection';
 import type { ModelState } from '../hooks/use-monitoring-session';
 
+// Props: từng ô thông tin kèm hàm đổi giá trị, ô đồng ý, tình trạng AI và kết nối,
+// lời báo lỗi, hàm bắt đầu giám sát, và khối kết nối máy giám thị.
 type Props = {
   candidateName: string;
   setCandidateName: (value: string) => void;
@@ -23,11 +30,23 @@ type Props = {
   hubState: HubState;
   errorMessage: string;
   startMonitoring: () => Promise<void>;
-  // Rendered in place of the LAN connection box when Firebase is not configured.
+  // Khối được vẽ ở vị trí ô kết nối mạng LAN, chỉ khi chưa cấu hình Firebase.
   hubPanel: ReactNode;
 };
 
-// Before the exam: candidate identity, proctor connection, consent and the start button.
+/**
+ * Đây là gì: React component thẻ "Thông tin phiên thi".
+ * Mục tiêu: trước giờ thi, thu đủ thông tin thí sinh, kết nối máy giám thị và sự đồng ý giám
+ *   sát rồi mới cho bắt đầu.
+ * Chức năng: 4 ô nhập (họ tên; số báo danh, mã phòng, số máy tự đổi thành chữ in hoa); khối
+ *   kết nối máy giám thị (chỉ khi không dùng Firebase, dịch vụ đám mây); công tắc "Tôi đã đọc
+ *   thông báo giám sát"; nút bắt đầu chỉ bấm được khi đã đồng ý, nhập đủ thông tin, AI không
+ *   đang tải và (nếu không dùng Firebase) đã nối được máy giám thị; dòng báo lỗi nếu có.
+ * Đầu ra: khối giao diện biểu mẫu phiên thi.
+ * Dùng ở đâu: candidate-screen.tsx, phần hiện khi chưa giám sát.
+ * Liên kết với: hooks/use-monitoring-session.ts (các ô thông tin, startMonitoring),
+ *   hasFirebaseConfig (web/src/services/firebase/firebase-client.ts), HubConnectionPanel.
+ */
 export function SessionFormCard({
   candidateName, setCandidateName, candidateId, setCandidateId, roomId, setRoomId, stationId, setStationId,
   consented, setConsented, modelState, hubState, errorMessage, startMonitoring, hubPanel,

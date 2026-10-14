@@ -1,10 +1,24 @@
+// File này vẽ thẻ "Bộ đệm & ngưỡng cảnh báo" trên trang quản trị: các ô chỉnh số giây
+// một dấu hiệu phải kéo dài trước khi AI phát cảnh báo.
+
 import { BrainCircuit, TimerReset } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BehaviorThresholds } from '@/domain/exam-types';
 
+// Props (thông tin khối cha truyền cho khối con): các ngưỡng hiện tại và hàm đổi một ngưỡng.
 type Props = { settings: BehaviorThresholds; updateThreshold: (key: keyof BehaviorThresholds, value: string) => void };
 
+/**
+ * Đây là gì: React component (một khối giao diện) thẻ ngưỡng cảnh báo.
+ * Mục tiêu: cho người quản trị chỉnh độ "nhạy" của AI theo quy chế từng kỳ thi.
+ * Chức năng: 5 ô số (1–60 giây): không có mặt, nhiều khuôn mặt, quay/cúi/ngẩng đầu,
+ *   hướng mắt lệch, và khoảng nghỉ giữa hai cảnh báo giống nhau; gõ số thì gọi updateThreshold.
+ * Đầu ra: khối giao diện thẻ ngưỡng.
+ * Dùng ở đâu: AdminScreen (web/src/features/admin/admin-screen.tsx).
+ * Liên kết với: kiểu BehaviorThresholds (domain/exam-types.ts), DEFAULT_THRESHOLDS
+ *   (domain/thresholds.ts), bộ máy chấm hành vi domain/behavior-engine.ts dùng các ngưỡng này.
+ */
 export function ThresholdSettingsCard({ settings, updateThreshold }: Props) {
   return (
     <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200/80"><CardHeader className="border-b border-slate-100 px-6 py-5"><CardTitle className="flex items-center gap-2 font-extrabold"><TimerReset className="size-5 text-violet-600" /> Bộ đệm & ngưỡng cảnh báo</CardTitle><CardDescription>Chỉ tạo sự kiện khi tín hiệu kéo dài liên tục quá ngưỡng.</CardDescription></CardHeader><CardContent className="grid gap-3 p-6 sm:grid-cols-2">{[

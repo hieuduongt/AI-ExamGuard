@@ -1,7 +1,19 @@
+// File này tạo một cảnh báo giả để giám thị thử xem trang giám thị hoạt động ra sao,
+// không cần thí sinh thật.
+
 import type { ExamEvent, StationStatus } from '@/domain/exam-types';
 import { demoStations, makeId } from '@/services/exam-sync';
 
-// Sample alert for the "Tạo cảnh báo thử" button; alternates red and yellow.
+/**
+ * Đây là gì: hàm tạo một cảnh báo mẫu.
+ * Mục tiêu: phục vụ nút "Tạo cảnh báo thử" để kiểm tra âm thanh, dải báo mới, bảng chi tiết.
+ * Chức năng: chọn lần lượt từng máy đang có (nếu chưa có máy nào thì lấy máy mẫu đầu tiên);
+ *   luân phiên giữa cảnh báo đỏ "nhiều khuôn mặt" và cảnh báo vàng "quay đầu".
+ * Đầu ra: một cảnh báo (ExamEvent) mới, chưa xem, có nguồn là "demo".
+ * Dùng ở đâu: addDemoAlert trong proctor-screen.tsx.
+ * Liên kết với: demoStations, makeId (web/src/services/exam-sync.ts); publishEvent gửi
+ *   cảnh báo này đi.
+ */
 export function buildDemoAlert(events: ExamEvent[], activeStations: StationStatus[]): ExamEvent {
   const index = events.length % Math.max(activeStations.length, 1);
   const station = activeStations[index] ?? demoStations()[0];

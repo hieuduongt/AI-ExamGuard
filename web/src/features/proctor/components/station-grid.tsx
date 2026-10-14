@@ -1,10 +1,27 @@
+// File này vẽ thẻ "Trạng thái máy thí sinh" ở trang giám thị: lưới ô vuông, mỗi ô là một
+// máy thí sinh, tô màu theo tình trạng.
+
 import { MonitorCheck, Wifi } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ExamEvent, StationStatus } from '@/domain/exam-types';
 
+// Props (thông tin khối cha truyền cho khối con): danh sách máy, danh sách cảnh báo và việc
+// mở một cảnh báo.
 type Props = { activeStations: StationStatus[]; events: ExamEvent[]; onSelectEvent: (id: string) => void };
 
-// One tile per candidate machine; clicking opens its latest unreviewed alert.
+/**
+ * Đây là gì: React component (một khối giao diện) lưới máy thí sinh.
+ * Mục tiêu: cho giám thị thấy ngay máy nào ổn, máy nào cần theo dõi, máy nào cần kiểm tra.
+ * Chức năng: mỗi máy thí sinh là một ô: xanh lá (ổn định), vàng (theo dõi), đỏ (kiểm tra),
+ *   xám (mất kết nối); ghi phòng, máy, họ tên, số báo danh, tình trạng AI, số giây đang quay
+ *   đầu so với ngưỡng, số cảnh báo; bấm vào ô thì mở cảnh báo chưa xem gần nhất của máy đó.
+ *   Chân thẻ ghi số khung hình AI xử lý mỗi giây (FPS) trung bình, số máy đang kết nối, tổng
+ *   số sự kiện. Chưa có máy nào thì hiện lời hướng dẫn.
+ * Đầu ra: khối giao diện thẻ lưới máy.
+ * Dùng ở đâu: ProctorScreen (web/src/features/proctor/proctor-screen.tsx).
+ * Liên kết với: markOfflineStations (../event-filters.ts) tạo activeStations; kiểu StationStatus
+ *   (web/src/domain/exam-types.ts); EventDetailDrawer mở ra khi bấm ô có cảnh báo.
+ */
 export function StationGrid({ activeStations, events, onSelectEvent }: Props) {
   return (
     <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200/80">

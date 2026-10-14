@@ -1,7 +1,23 @@
+/**
+ * File này là phần tiêu đề đầu trang thí sinh, kèm ô nhỏ báo trạng thái hiện tại.
+ * Thuộc phần giao diện thí sinh (web/src/features/candidate/components/).
+ */
 import { Badge } from '@/components/ui/badge';
 
+// Props: màu chấm trạng thái, có đang giám sát không, câu trạng thái hiện tại.
 type Props = { statusTone: string; running: boolean; statusText: string };
 
+/**
+ * Đây là gì: React component tiêu đề trang thí sinh.
+ * Mục tiêu: cho thí sinh biết mình đang ở khu vực nào và hệ thống đang làm gì.
+ * Chức năng: hiện nhãn "KHU VỰC THÍ SINH", tiêu đề, lời giải thích rằng webcam được phân
+ *   tích ngay trên máy; bên phải là chấm màu trạng thái (nhấp nháy khi đang giám sát) và câu
+ *   trạng thái.
+ * Đầu ra: khối giao diện tiêu đề.
+ * Dùng ở đâu: đầu trang trong candidate-screen.tsx.
+ * Liên kết với: statusText từ hooks/use-monitoring-session.ts; màu statusTone tính trong
+ *   candidate-screen.tsx.
+ */
 export function CandidateHeading({ statusTone, running, statusText }: Props) {
   return (
     <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">

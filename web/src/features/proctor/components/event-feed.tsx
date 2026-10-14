@@ -1,3 +1,6 @@
+// File này vẽ thẻ "Luồng cảnh báo" ở trang giám thị: danh sách cảnh báo mới nhất, kèm ô
+// tìm kiếm và các nút lọc.
+
 import { BellRing, Check, CheckCircle2, ChevronRight, Filter, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,6 +9,8 @@ import { alertIcons, severityClasses } from '../alert-style';
 import type { FilterValue } from '../event-filters';
 import { timeLabel } from '../time-label';
 
+// Props (thông tin khối cha truyền cho khối con): danh sách đã lọc, bộ lọc, từ khóa, cảnh báo
+// đang chọn và các việc cần làm khi người dùng thay đổi chúng.
 type Props = {
   filteredEvents: ExamEvent[];
   filter: FilterValue;
@@ -16,6 +21,19 @@ type Props = {
   onSelectEvent: (id: string) => void;
 };
 
+/**
+ * Đây là gì: React component (một khối giao diện) danh sách cảnh báo.
+ * Mục tiêu: cho giám thị lướt các cảnh báo, tìm theo phòng/máy/số báo danh và chọn một cái
+ *   để xem chi tiết.
+ * Chức năng: ô tìm kiếm; 5 nút lọc (Tất cả, Chưa xem, Đỏ, Vàng, Thông tin); mỗi cảnh báo là
+ *   một hàng có biểu tượng, phòng, máy, tiêu đề, họ tên, thời gian, dấu "Đã xem"; hàng đang
+ *   chọn được tô xanh; nếu không có gì khớp thì hiện lời nhắc đổi bộ lọc.
+ * Đầu ra: khối giao diện thẻ luồng cảnh báo.
+ * Dùng ở đâu: ProctorScreen (web/src/features/proctor/proctor-screen.tsx).
+ * Liên kết với: FilterValue và filterEvents (../event-filters.ts, tạo ra filteredEvents);
+ *   alertIcons, severityClasses
+ *   (../alert-style.ts); timeLabel (../time-label.ts); EventDetailDrawer mở khi chọn một hàng.
+ */
 export function EventFeed({ filteredEvents, filter, onFilterChange, queryText, onQueryChange, selectedId, onSelectEvent }: Props) {
   return (
     <Card className="border-0 py-0 shadow-sm ring-1 ring-slate-200/80">
