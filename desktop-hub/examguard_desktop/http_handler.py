@@ -128,14 +128,14 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
         """
         Đây là gì: hàm thêm các dòng "tiêu đề" chung vào mọi câu trả lời trước khi gửi.
         Mục tiêu: trang web mở từ máy khác vẫn gọi được hub, và luôn thấy dữ liệu mới nhất.
-        Chức năng: cho phép mọi trang gọi tới (CORS) với các kiểu GET, POST, PATCH, OPTIONS;
-          dặn trình duyệt không lưu bản cũ (no-cache); rồi để lớp cha kết thúc phần tiêu đề.
+        Chức năng: cho phép mọi trang gọi tới (CORS) với các kiểu GET, POST, PATCH, DELETE,
+          OPTIONS; dặn trình duyệt không lưu bản cũ (no-cache); rồi để lớp cha kết thúc phần tiêu đề.
         Đầu ra: không trả về gì.
         Dùng ở đâu: send_json, do_OPTIONS, và lớp cha khi gửi tệp.
         Liên kết với: tests/test_hub_api.py (kiểm tra đúng các tiêu đề này).
         """
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         super().end_headers()
@@ -306,6 +306,33 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
         updated = exam_store.set_reviewed(event_id, reviewed, verdict)
         self.send_json(200 if updated else 404, {"ok": updated})
+
+    def do_DELETE(self):
+        """
+        Đây là gì: hàm xóa dữ liệu (DELETE): gỡ một máy thí sinh khỏi lưới giám thị.
+        Mục tiêu: giám thị bỏ máy đã ngắt kết nối hoặc máy thử nghiệm cũ.
+        Chức năng: chỉ nhận /api/stations/<roomId>/<stationId> (đã mã hóa URL); xóa khỏi
+          exam_stations; không xóa cảnh báo của máy đó.
+        Đầu ra: không trả về gì; 200 nếu đã xóa, 404 nếu không có máy đó.
+        Dùng ở đâu: Python tự gọi khi có DELETE. Phía web: services/exam-sync.ts.
+        """
+        route = urllib.parse.urlparse(self.path).path
+        prefix = "/api/stations/"
+        if not route.startswith(prefix):
+            self.send_json(404, {"ok": False, "error": "Không tìm thấy API"})
+            return
+        rest = route[len(prefix):].strip("/")
+        parts = rest.split("/")
+        if len(parts) != 2:
+            self.send_json(400, {"ok": False, "error": "Thiếu mã phòng hoặc mã máy"})
+            return
+        room_id = urllib.parse.unquote(parts[0])
+        station_id = urllib.parse.unquote(parts[1])
+        if not room_id.strip() or not station_id.strip():
+            self.send_json(400, {"ok": False, "error": "Thiếu mã phòng hoặc mã máy"})
+            return
+        removed = exam_store.remove_station(room_id, station_id)
+        self.send_json(200 if removed else 404, {"ok": removed})
 
     def log_message(self, format, *args):
         """

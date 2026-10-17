@@ -38,7 +38,7 @@ function browser() {
   const storage = new Map();
   const signals = [];
   const requests = [];
-  const state = { online: false };
+  const state = { online: false, status: 200 };
   /**
    * Đây là gì: bản giả của CustomEvent (một "tín hiệu" mà trang web tự phát ra).
    * Mục tiêu: Node không có sẵn CustomEvent như trình duyệt, nên cần bản giả.
@@ -71,7 +71,10 @@ function browser() {
   const fetch = async (url, init = {}) => {
     requests.push({ url, method: init.method || 'GET', body: init.body });
     if (!state.online) throw new Error('offline');
-    return { ok: true, json: async () => ({ ok: true }) };
+    if (typeof state.status === 'number' && state.status >= 400) {
+      return { ok: false, status: state.status, json: async () => ({ ok: false }) };
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
   };
   const globals = { window, localStorage, fetch, CustomEvent: FakeCustomEvent, AbortController, crypto: undefined, BroadcastChannel: undefined };
   const sync = loadSource(SOURCE, {
@@ -125,6 +128,51 @@ test('station heartbeat and review go to the hub with the expected routes', asyn
     'PATCH http://10.0.0.5:8765/api/events/id%20with%20space',
   ]);
   assert.equal(JSON.parse(storage.get('examguard:stations:v2'))[0].stationId, 'PC/01');
+});
+
+// Clip/ảnh không được nhét vào localStorage; gửi thẳng hub thành công thì báo đã nhận.
+test('alert with clip is not stored in localStorage and marks delivered on direct hub ok', async () => {
+  const { sync, storage, signals, requests, state } = browser();
+  state.online = true;
+  const fat = { ...event('clip-1'), clip: `data:video/webm;base64,${'A'.repeat(2000)}` };
+  sync.publishEvent(fat);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const stored = JSON.parse(storage.get('examguard:events:v2'));
+  assert.equal(stored.length, 1);
+  assert.equal(stored[0].clip, undefined);
+  assert.ok(requests.some((item) => item.url.endsWith('/api/events') && item.body.includes('clip')));
+  assert.ok(signals.some((item) => item.type === 'examguard-delivery' && item.detail?.id === 'clip-1'));
+  assert.equal(sync.getPendingEventCount(), 0);
+});
+
+// Hub từ chối (4xx) một cảnh báo không làm kẹt cả hộp thư đi.
+test('rejected outbox item is dropped so later alerts can still flush', async () => {
+  const { sync, storage, requests, state } = browser();
+  state.online = true;
+  state.status = 400;
+  storage.set('examguard:outbox:v1', JSON.stringify([
+    { hubUrl: 'http://hub.local:8765', event: event('bad') },
+    { hubUrl: 'http://hub.local:8765', event: event('good') },
+  ]));
+  await sync.flushPendingEvents();
+  assert.equal(sync.getPendingEventCount(), 0);
+  assert.equal(requests.filter((item) => item.url.endsWith('/api/events')).length, 2);
+});
+
+// Xóa máy gửi DELETE đúng đường dẫn và gỡ khỏi localStorage.
+test('removeStation deletes on hub and locally', async () => {
+  const { sync, requests, state, storage } = browser();
+  state.online = true;
+  storage.set('examguard:teacher-hub:v1', 'http://10.0.0.5:8765');
+  storage.set('examguard:stations:v2', JSON.stringify([
+    { roomId: 'P1', stationId: 'PC/01', candidateId: 'S', candidateName: 'A', state: 'offline', lastSeen: 1, metrics: {}, alertCount: 0 },
+  ]));
+  sync.removeStation('P1', 'PC/01');
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(requests.map((item) => `${item.method} ${item.url}`), [
+    'DELETE http://10.0.0.5:8765/api/stations/P1/PC%2F01',
+  ]);
+  assert.equal(JSON.parse(storage.get('examguard:stations:v2')).length, 0);
 });
 
 // Địa chỉ hub được chuẩn hóa và được nhớ lại sau khi kiểm tra kết nối thành công.

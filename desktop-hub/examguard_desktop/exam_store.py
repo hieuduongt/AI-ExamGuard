@@ -15,11 +15,35 @@ data_lock = threading.Lock()
 exam_events = []
 # Trạng thái từng máy thi, khóa là "<mã phòng>::<mã máy>".
 exam_stations = {}
-# Cài đặt phòng thi do trang Quản trị đẩy lên (máy thí sinh đọc lại khi bắt đầu phiên).
+# Ngưỡng mặc định khớp web/src/domain/thresholds.ts › DEFAULT_THRESHOLDS.
+DEFAULT_THRESHOLDS = {
+    "noFaceSeconds": 5,
+    "multipleFacesSeconds": 2,
+    "headTurnSeconds": 3,
+    "headPoseSeconds": 6,
+    "gazeAwaySeconds": 5,
+    "cooldownSeconds": 12,
+}
+# Cài đặt phòng thi do trang Quản trị đẩy lên (máy thí sinh đọc lại khi bắt đầu / đang chạy phiên).
 room_settings = {
     "storeSnapshots": False,
     "requireConsent": True,
+    "thresholds": dict(DEFAULT_THRESHOLDS),
 }
+
+
+def _sanitize_thresholds(value):
+    """Chỉ nhận số nguyên 1–60 cho từng ô ngưỡng; ô sai giữ mặc định."""
+    if not isinstance(value, dict):
+        return None
+    cleaned = dict(DEFAULT_THRESHOLDS)
+    for key in DEFAULT_THRESHOLDS:
+        raw = value.get(key)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            continue
+        if 1 <= float(raw) <= 60:
+            cleaned[key] = int(round(float(raw)))
+    return cleaned
 
 
 def add_event(payload):
@@ -55,6 +79,19 @@ def save_station(payload):
         exam_stations[key] = payload
 
 
+def remove_station(room_id, station_id):
+    """
+    Đây là gì: hàm gỡ một máy thí sinh khỏi danh sách trên hub.
+    Mục tiêu: giám thị xóa máy đã ngắt / thử nghiệm cũ, không còn hiện trên lưới.
+    Chức năng: xóa khóa "<phòng>::<máy>"; không đụng tới danh sách cảnh báo.
+    Đầu ra: True nếu đã có và đã xóa, False nếu không tìm thấy.
+    Dùng ở đâu: http_handler.py, DELETE /api/stations/<roomId>/<stationId>.
+    """
+    key = f"{room_id}::{station_id}"
+    with data_lock:
+        return exam_stations.pop(key, None) is not None
+
+
 def snapshot():
     """
     Đây là gì: hàm chụp "ảnh nhanh" toàn bộ dữ liệu hiện có.
@@ -77,16 +114,20 @@ def snapshot():
 def get_settings():
     """
     Đây là gì: hàm đọc cài đặt phòng thi đang lưu trên hub.
-    Mục tiêu: máy thí sinh biết có bật lưu đoạn hình ngắn hay không.
+    Mục tiêu: máy thí sinh biết ngưỡng cảnh báo và công tắc lưu đoạn hình.
     """
     with data_lock:
-        return dict(room_settings)
+        return {
+            "storeSnapshots": room_settings["storeSnapshots"],
+            "requireConsent": room_settings["requireConsent"],
+            "thresholds": dict(room_settings["thresholds"]),
+        }
 
 
 def save_settings(payload):
     """
     Đây là gì: hàm cập nhật cài đặt phòng thi trên hub.
-    Mục tiêu: trang Quản trị bật/tắt lưu đoạn hình thì mọi máy thí sinh nối hub đều nhận được.
+    Mục tiêu: trang Quản trị lưu ngưỡng / quyền riêng tư thì mọi máy thí sinh nối hub đều nhận được.
     """
     if not isinstance(payload, dict):
         return get_settings()
@@ -95,7 +136,15 @@ def save_settings(payload):
             room_settings["storeSnapshots"] = bool(payload.get("storeSnapshots"))
         if "requireConsent" in payload:
             room_settings["requireConsent"] = bool(payload.get("requireConsent"))
-        return dict(room_settings)
+        if "thresholds" in payload:
+            cleaned = _sanitize_thresholds(payload.get("thresholds"))
+            if cleaned is not None:
+                room_settings["thresholds"] = cleaned
+        return {
+            "storeSnapshots": room_settings["storeSnapshots"],
+            "requireConsent": room_settings["requireConsent"],
+            "thresholds": dict(room_settings["thresholds"]),
+        }
 
 
 # Các kết luận giám thị được phép ghi vào cảnh báo (khớp shared/hub-contract.json › verdicts).

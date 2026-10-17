@@ -7,7 +7,7 @@
  * giám thị, chương trình desktop-hub/), và Firebase (dịch vụ đám mây) nếu đã cấu hình.
  */
 import type { AlertVerdict, ExamEvent, StationStatus } from '@/domain/exam-types';
-import { emitHubStatus } from '@/services/browser-signals';
+import { emitDelivered, emitHubStatus } from '@/services/browser-signals';
 import { hasFirebaseConfig } from '@/services/firebase/firebase-client';
 import {
   markFirestoreEventReviewed,
@@ -16,17 +16,26 @@ import {
   subscribeFirestore,
 } from '@/services/firebase/firestore-sync';
 import { fetchHubSnapshot, type ProctorPresence } from '@/services/hub/hub-client';
-import { postToHub } from '@/services/hub/hub-transport';
+import { postToHub, postToHubResult } from '@/services/hub/hub-transport';
 import { activeHubUrl } from '@/services/hub/hub-url';
 import { enqueueEvent, flushPendingEvents } from '@/services/hub/outbox';
 import {
   localEvents,
   localStations,
   markLocalEventReviewed,
+  removeLocalStation,
   saveLocalEvent,
   saveLocalStation,
   subscribeLocalData,
 } from '@/services/local-demo/local-store';
+
+/** Cảnh báo không kèm clip/ảnh — đủ cho localStorage và hộp thư đi. */
+function withoutMedia(event: ExamEvent): ExamEvent {
+  const light: ExamEvent = { ...event };
+  delete light.clip;
+  delete light.snapshots;
+  return light;
+}
 
 // Chuyển tiếp các hàm, kiểu dữ liệu từ những file con, để màn hình chỉ cần nhập (import)
 // từ một chỗ là services/exam-sync.ts.
@@ -68,26 +77,50 @@ export function makeId(prefix = 'event') {
  */
 export function publishEvent(event: ExamEvent) {
   if (typeof window === 'undefined') return;
-  saveLocalEvent(event);
+  // Không cất clip/ảnh vào localStorage — dễ đầy ổ nhớ trình duyệt và làm hỏng cả bước gửi hub.
+  try {
+    saveLocalEvent(withoutMedia(event));
+  } catch {
+    /* quota — vẫn gửi hub */
+  }
   const hubUrl = activeHubUrl();
   if (hubUrl) {
     const hasMedia = Boolean(event.clip || event.snapshots?.length);
     if (hasMedia) {
-      // Clip/ảnh lớn: gửi thẳng, tránh nhét data-URL vào localStorage (dễ vượt hạn mức).
-      void postToHub('/api/events', event, 'POST', hubUrl).then((ok) => {
-        if (ok) return;
-        const light: ExamEvent = { ...event };
-        delete light.clip;
-        delete light.snapshots;
-        enqueueEvent(hubUrl, light);
-        void flushPendingEvents();
-      });
+      // Clip lớn: gửi thẳng; lỗi mạng thì xếp bản chữ vào hộp thư đi.
+      void deliverMediaEventToHub(hubUrl, event);
     } else {
+      // Xếp hàng ngay (đồng bộ) để mất mạng / tải lại trang không mất cảnh báo, rồi gửi.
       enqueueEvent(hubUrl, event);
       void flushPendingEvents();
     }
   }
-  saveEventToFirestore(event);
+  try {
+    saveEventToFirestore(withoutMedia(event));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Gửi cảnh báo kèm clip/ảnh: thử bản đủ, thất bại thì bản chữ; thành công → báo đã nhận ngay.
+ */
+async function deliverMediaEventToHub(hubUrl: string, event: ExamEvent) {
+  const first = await postToHubResult('/api/events', event, 'POST', hubUrl);
+  if (first === 'ok') {
+    emitDelivered(event.id);
+    return;
+  }
+  const light = withoutMedia(event);
+  const second = await postToHubResult('/api/events', light, 'POST', hubUrl);
+  if (second === 'ok') {
+    emitDelivered(event.id);
+    return;
+  }
+  if (first === 'unreachable' || second === 'unreachable') {
+    enqueueEvent(hubUrl, light);
+    void flushPendingEvents();
+  }
 }
 
 /**
@@ -125,6 +158,23 @@ export function markEventReviewed(id: string, reviewed = true, verdict?: AlertVe
   markLocalEventReviewed(id, reviewed, verdict);
   void postToHub(`/api/events/${encodeURIComponent(id)}`, { reviewed, ...(verdict ? { verdict } : {}) }, 'PATCH');
   markFirestoreEventReviewed(id, reviewed, verdict);
+}
+
+/**
+ * Đây là gì: hàm gỡ một máy thí sinh khỏi lưới giám thị (hub + bộ nhớ chạy thử).
+ * Mục tiêu: giám thị xóa máy đã ngắt / máy thử cũ; không xóa cảnh báo đã ghi.
+ */
+export function removeStation(roomId: string, stationId: string) {
+  if (typeof window === 'undefined') return;
+  removeLocalStation(roomId, stationId);
+  const hubUrl = activeHubUrl();
+  if (!hubUrl) return;
+  void postToHub(
+    `/api/stations/${encodeURIComponent(roomId)}/${encodeURIComponent(stationId)}`,
+    undefined,
+    'DELETE',
+    hubUrl,
+  );
 }
 
 /**

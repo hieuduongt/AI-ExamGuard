@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react';
 import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import type { AlertVerdict, ExamEvent } from '@/domain/exam-types';
-import { markEventReviewed, publishEvent } from '@/services/exam-sync';
+import { markEventReviewed, publishEvent, removeStation } from '@/services/exam-sync';
 import { EventDetailDrawer } from './components/event-detail-drawer';
 import { EventDistribution } from './components/event-distribution';
 import { EventFeed } from './components/event-feed';
@@ -26,7 +26,7 @@ import { useProctorFeed } from './hooks/use-proctor-feed';
  * Mục tiêu: giúp giám thị theo dõi mọi máy thí sinh, nhận cảnh báo, kết luận đúng/báo nhầm và xuất báo cáo.
  */
 export function ProctorScreen() {
-  const { events, setEvents, stations, clock, hubUrl, connectCode, hubConnected, latestAlert, setLatestAlert } = useProctorFeed();
+  const { events, setEvents, stations, setStations, clock, hubUrl, connectCode, hubConnected, latestAlert, setLatestAlert } = useProctorFeed();
   const [filter, setFilter] = useState<FilterValue>('all');
   const [queryText, setQueryText] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -58,6 +58,11 @@ export function ProctorScreen() {
     downloadConfirmedCsv(events);
   }
 
+  function handleRemoveStation(roomId: string, stationId: string) {
+    removeStation(roomId, stationId);
+    setStations((items) => items.filter((item) => !(item.roomId === roomId && item.stationId === stationId)));
+  }
+
   async function copyHubUrl() {
     if (!hubUrl) return;
     try {
@@ -82,7 +87,7 @@ export function ProctorScreen() {
         <StatCards counts={counts} falseAlarmByType={falseAlarmByType} />
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,.9fr)_minmax(420px,1.1fr)]">
-          <StationGrid activeStations={activeStations} events={events} onSelectEvent={setSelectedId} />
+          <StationGrid activeStations={activeStations} events={events} onSelectEvent={setSelectedId} onRemoveStation={handleRemoveStation} />
           <EventFeed filteredEvents={filteredEvents} filter={filter} onFilterChange={setFilter} queryText={queryText} onQueryChange={setQueryText} selectedId={selectedId} onSelectEvent={setSelectedId} />
         </div>
 

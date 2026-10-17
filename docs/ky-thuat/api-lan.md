@@ -15,7 +15,7 @@ Các giá trị chung (cổng, giới hạn, trường bắt buộc) nằm ở [
 ## Quy ước chung
 
 - Dữ liệu JSON UTF-8. Thân yêu cầu tối đa **~1,5 MB** (đủ kèm đoạn hình ngắn); lớn hơn, rỗng hoặc không phải JSON → coi là không hợp lệ.
-- Mọi phản hồi có `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS`,
+- Mọi phản hồi có `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS`,
   `Access-Control-Allow-Headers: Content-Type`, `Cache-Control: no-cache, no-store, must-revalidate`.
 - `OPTIONS` bất kỳ → `204`.
 - Đường dẫn không phải `/api/` → phục vụ giao diện từ `web/out` (`/thi-sinh` trả `thi-sinh.html`, không liệt kê thư mục;
@@ -60,6 +60,10 @@ Chỉ giữ **500** cảnh báo mới nhất.
 ### `POST /api/stations` — nhịp tim của máy thí sinh (mỗi 2 giây)
 Thân: một `StationStatus`. Bắt buộc 4 trường thông tin thí sinh như trên. Máy chủ thêm `serverSeenAt`
 (mili giây) và **thay thế** bản ghi cũ có cùng `roomId` + `stationId`. Trả `200 {"ok": true}`.
+
+### `DELETE /api/stations/{roomId}/{stationId}` — gỡ máy khỏi lưới giám thị
+Giám thị bấm nút xóa máy. Chỉ xóa bản ghi station; **không** xóa cảnh báo đã ghi.
+Trả `200 {"ok": true}` nếu đã xóa, `404 {"ok": false}` nếu không có máy đó.
 
 ### `PATCH /api/events/{id}` — đánh dấu xác minh / kết luận
 Thân: `{"reviewed": true|false, "verdict"?: "confirmed"|"false_alarm"}`.

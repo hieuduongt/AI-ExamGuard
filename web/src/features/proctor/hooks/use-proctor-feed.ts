@@ -50,8 +50,8 @@ function savedRoomName() {
  *   - Lắng nghe tín hiệu kết nối/mất kết nối với hub.
  *   - Lần đầu có dữ liệu thì chỉ ghi nhớ các cảnh báo cũ; những lần sau, cảnh báo nào chưa từng
  *     thấy và chưa xem thì đặt làm latestAlert.
- * Đầu ra: { events, setEvents, stations, clock, hubUrl, connectCode, hubConnected, latestAlert,
- *   setLatestAlert }.
+ * Đầu ra: { events, setEvents, stations, setStations, clock, hubUrl, connectCode, hubConnected,
+ *   latestAlert, setLatestAlert }.
  * Dùng ở đâu: ProctorScreen (web/src/features/proctor/proctor-screen.tsx).
  * Liên kết với: getDesktopRuntime, subscribeExamData, setConfiguredHubUrl, getConfiguredHubUrl,
  *   setPageHubUrl (web/src/services/exam-sync.ts và services/hub/); HUB_STATUS_SIGNAL
@@ -117,7 +117,7 @@ export function useProctorFeed() {
   }, []);
 
   // Mỗi khi danh sách cảnh báo đổi: tìm cảnh báo mới (chưa từng thấy, chưa xem) để báo
-  // cho giám thị.
+  // cho giám thị. Nếu hub reset / cảnh báo biến mất hoặc đã xem → tắt dải đỏ.
   useEffect(() => {
     const currentIds = new Set(events.map((event) => event.id));
     if (!eventFeedReadyRef.current) {
@@ -128,9 +128,16 @@ export function useProctorFeed() {
     const incoming = events.find((event) => !knownEventIdsRef.current.has(event.id) && !event.reviewed);
     if (incoming) {
       setLatestAlert(incoming);
+    } else {
+      setLatestAlert((prev) => {
+        if (!prev) return null;
+        const stillThere = events.find((event) => event.id === prev.id);
+        if (!stillThere || stillThere.reviewed) return null;
+        return prev;
+      });
     }
     knownEventIdsRef.current = currentIds;
   }, [events]);
 
-  return { events, setEvents, stations, clock, hubUrl, connectCode, hubConnected, latestAlert, setLatestAlert };
+  return { events, setEvents, stations, setStations, clock, hubUrl, connectCode, hubConnected, latestAlert, setLatestAlert };
 }

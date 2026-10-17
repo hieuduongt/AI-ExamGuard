@@ -70,10 +70,14 @@ function broadcast(payload: unknown) {
  *   services/browser-signals.ts.
  */
 export function saveLocalEvent(event: ExamEvent) {
-  const next = [event, ...localEvents().filter((item) => item.id !== event.id)].slice(0, 500);
+  // Không lưu clip/ảnh data-URL — dễ vượt hạn mức localStorage và làm hỏng cả phiên.
+  const light: ExamEvent = { ...event };
+  delete light.clip;
+  delete light.snapshots;
+  const next = [light, ...localEvents().filter((item) => item.id !== light.id)].slice(0, 500);
   localStorage.setItem(EVENT_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent(LOCAL_EVENTS_SIGNAL));
-  broadcast({ kind: 'event', event });
+  broadcast({ kind: 'event', event: light });
 }
 
 /**
@@ -93,6 +97,18 @@ export function saveLocalStation(station: StationStatus) {
   localStorage.setItem(STATION_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent(LOCAL_STATIONS_SIGNAL));
   broadcast({ kind: 'station', station });
+}
+
+/**
+ * Đây là gì: hàm gỡ một máy thí sinh khỏi bộ nhớ chạy thử trong trình duyệt.
+ * Mục tiêu: khớp với nút "Xóa máy" trên trang giám thị khi chưa/không dùng hub.
+ */
+export function removeLocalStation(roomId: string, stationId: string) {
+  const key = `${roomId}::${stationId}`;
+  const next = localStations().filter((item) => `${item.roomId}::${item.stationId}` !== key);
+  localStorage.setItem(STATION_KEY, JSON.stringify(next));
+  window.dispatchEvent(new CustomEvent(LOCAL_STATIONS_SIGNAL));
+  broadcast({ kind: 'station-remove', roomId, stationId });
 }
 
 /**

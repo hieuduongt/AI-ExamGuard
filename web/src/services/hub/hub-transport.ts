@@ -9,6 +9,9 @@ import { activeHubUrl } from './hub-url';
 /** Thời gian chờ tối đa cho mỗi yêu cầu gửi tới máy giám thị (clip ngắn có thể lớn hơn vài trăm KB). */
 const HUB_TIMEOUT_MS = 12000;
 
+/** Kết quả gửi tới hub: thành công / hub từ chối dữ liệu / không tới được hub. */
+export type HubPostResult = 'ok' | 'rejected' | 'unreachable';
+
 /**
  * Đây là gì: hàm gửi yêu cầu qua mạng nhưng không chờ quá lâu.
  * Mục tiêu: nếu máy giám thị tắt hoặc mạng hỏng thì trang không bị treo mãi.
@@ -31,31 +34,38 @@ export async function fetchWithTimeout(url: string, init?: RequestInit) {
 }
 
 /**
- * Đây là gì: hàm gửi dữ liệu dạng JSON tới máy giám thị.
- * Mục tiêu: gửi cảnh báo, trạng thái máy thí sinh, hoặc dấu "đã xem" lên máy giám thị.
- * Chức năng: gửi dữ liệu tới hubUrl + path qua API (cửa giao tiếp giữa hai chương trình)
- *   của hub; báo trạng thái hub là đã kết nối / mất kết nối và không bao giờ ném lỗi ra
- *   ngoài. Nếu chưa có địa chỉ hub thì không gửi.
- * Đầu ra: việc cần chờ cho ra true nếu máy giám thị nhận, false nếu không gửi được.
- * Dùng ở đâu: services/hub/outbox.ts (gửi cảnh báo), services/exam-sync.ts (gửi trạng
- *   thái máy, đánh dấu đã xem).
- * Liên kết với: activeHubUrl() trong ./hub-url.ts; emitHubStatus() trong
- *   services/browser-signals.ts; các đường /api/... trong
- *   desktop-hub/examguard_desktop/http_handler.py.
+ * Đây là gì: hàm gửi dữ liệu JSON tới hub và phân loại kết quả chi tiết.
+ * Mục tiêu: outbox biết lúc nào nên bỏ qua cả hàng (mất mạng) và lúc nào chỉ bỏ một cảnh báo hỏng.
+ * Đầu ra: 'ok' | 'rejected' (4xx) | 'unreachable' (mất mạng / 5xx / hết giờ).
  */
-export async function postToHub(path: string, payload: unknown, method = 'POST', hubUrl = activeHubUrl()) {
-  if (!hubUrl) return false;
+export async function postToHubResult(path: string, payload: unknown, method = 'POST', hubUrl = activeHubUrl()): Promise<HubPostResult> {
+  if (!hubUrl) return 'unreachable';
   try {
     const response = await fetchWithTimeout(`${hubUrl}${path}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: payload === undefined ? undefined : JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('LAN hub rejected the request');
-    emitHubStatus('connected');
-    return true;
+    if (response.ok) {
+      emitHubStatus('connected');
+      return 'ok';
+    }
+    emitHubStatus(response.status >= 500 ? 'disconnected' : 'connected');
+    return response.status >= 400 && response.status < 500 ? 'rejected' : 'unreachable';
   } catch {
     emitHubStatus('disconnected');
-    return false;
+    return 'unreachable';
   }
+}
+
+/**
+ * Đây là gì: hàm gửi dữ liệu dạng JSON tới máy giám thị.
+ * Mục tiêu: gửi cảnh báo, trạng thái máy thí sinh, hoặc dấu "đã xem" lên máy giám thị.
+ * Chức năng: gửi dữ liệu tới hubUrl + path qua API của hub; báo trạng thái hub là đã kết nối /
+ *   mất kết nối và không bao giờ ném lỗi ra ngoài. Nếu chưa có địa chỉ hub thì không gửi.
+ * Đầu ra: việc cần chờ cho ra true nếu máy giám thị nhận, false nếu không gửi được.
+ * Dùng ở đâu: services/hub/outbox.ts, services/exam-sync.ts.
+ */
+export async function postToHub(path: string, payload: unknown, method = 'POST', hubUrl = activeHubUrl()) {
+  return (await postToHubResult(path, payload, method, hubUrl)) === 'ok';
 }

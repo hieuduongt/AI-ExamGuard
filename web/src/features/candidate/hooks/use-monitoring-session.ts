@@ -105,6 +105,30 @@ export function useMonitoringSession({ hubState, refreshPendingCount, experiment
   const snapshotCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const clipRecorderRef = useRef(new AlertClipRecorder());
 
+  /** Áp dụng ngưỡng mới nếu có ô nào đổi (hub ưu tiên hơn localStorage). */
+  const applyThresholds = useCallback((next: BehaviorThresholds) => {
+    const prev = thresholdsRef.current;
+    const changed = (Object.keys(next) as Array<keyof BehaviorThresholds>).some((key) => prev[key] !== next[key]);
+    if (!changed) return;
+    thresholdsRef.current = next;
+    setActiveThresholds(next);
+  }, []);
+
+  /** Đọc ngưỡng + công tắc lưu hình từ hub (nếu có), không thì từ localStorage cùng máy. */
+  const syncRoomSettings = useCallback(async () => {
+    const settingsRaw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const localThresholds = parseSavedThresholds(settingsRaw);
+    const localPrivacy = parseSavedPrivacy(settingsRaw);
+    const hubSettings = await fetchHubSettings(activeHubUrl());
+    if (hubSettings) {
+      applyThresholds(hubSettings.thresholds);
+      storeSnapshotsRef.current = hubSettings.storeSnapshots || localPrivacy.storeSnapshots;
+    } else {
+      applyThresholds(localThresholds);
+      storeSnapshotsRef.current = localPrivacy.storeSnapshots;
+    }
+  }, [applyThresholds]);
+
   // Khi mở trang: nếu Quản trị yêu cầu tự tích đồng ý thì bắt đầu ở trạng thái chưa đồng ý.
   useEffect(() => {
     const privacy = parseSavedPrivacy(localStorage.getItem(SETTINGS_STORAGE_KEY));
@@ -354,13 +378,17 @@ export function useMonitoringSession({ hubState, refreshPendingCount, experiment
   // Canh trình duyệt (rời cửa sổ, phím tắt bị hạn chế) trong lúc giám sát; tắt khi chạy video thử.
   useBrowserGuard(running, emitAlert, experimentMode);
 
-  // Khi đang giám sát: gửi nhịp tim trạng thái máy ngay, rồi cứ 2 giây gửi lại một lần.
+  // Khi đang giám sát: gửi nhịp tim + kéo lại ngưỡng từ hub (Quản trị vừa lưu thì thí sinh cập nhật).
   useEffect(() => {
     if (!running) return;
-    const timer = window.setInterval(() => updateStation(metricsRef.current), 2000);
-    updateStation(metricsRef.current);
+    const tick = () => {
+      updateStation(metricsRef.current);
+      void syncRoomSettings();
+    };
+    const timer = window.setInterval(tick, 2000);
+    tick();
     return () => window.clearInterval(timer);
-  }, [running, updateStation]);
+  }, [running, updateStation, syncRoomSettings]);
 
   /**
    * Đây là gì: hàm con bắt đầu phiên giám sát.
@@ -409,13 +437,8 @@ export function useMonitoringSession({ hubState, refreshPendingCount, experiment
     setCandidateId(identity.candidateId);
     setRoomId(identity.roomId);
     setStationId(identity.stationId);
-    const settingsRaw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    thresholdsRef.current = parseSavedThresholds(settingsRaw);
-    const localPrivacy = parseSavedPrivacy(settingsRaw);
-    storeSnapshotsRef.current = localPrivacy.storeSnapshots;
-    // Ưu tiên công tắc trên hub (do trang Quản trị đẩy lên) nếu có — để máy thí sinh khác vẫn nhận được.
-    const hubSettings = await fetchHubSettings(activeHubUrl());
-    if (hubSettings) storeSnapshotsRef.current = hubSettings.storeSnapshots || localPrivacy.storeSnapshots;
+    // Ngưỡng / công tắc: ưu tiên hub (máy Quản trị đã Lưu), không thì localStorage cùng máy.
+    await syncRoomSettings();
     setActiveThresholds(thresholdsRef.current);
     snapshotsRef.current = [];
     lastSnapshotAtRef.current = 0;

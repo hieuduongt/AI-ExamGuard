@@ -12,7 +12,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { loadSource } = require('../helpers/load-source.cjs');
-const { DEFAULT_THRESHOLDS, VISION_LIMITS, parseSavedThresholds } = loadSource('src/domain/thresholds.ts');
+const { DEFAULT_THRESHOLDS, VISION_LIMITS, normalizeThresholds, parseSavedThresholds } = loadSource('src/domain/thresholds.ts');
 const { classifyMetrics } = loadSource('src/domain/station-health.ts');
 const { ALERT_LABELS, alertSeverity } = loadSource('src/domain/alert-catalog.ts');
 
@@ -32,6 +32,10 @@ test('saved thresholds accept only finite numbers between 1 and 60 seconds', () 
   assert.deepEqual({ ...parseSavedThresholds('null') }, { ...DEFAULT_THRESHOLDS });
   const parsed = parseSavedThresholds(JSON.stringify({ thresholds: { noFaceSeconds: 8, headTurnSeconds: 0, gazeAwaySeconds: 61, cooldownSeconds: '9' } }));
   assert.deepEqual({ ...parsed }, { ...DEFAULT_THRESHOLDS, noFaceSeconds: 8 });
+  assert.deepEqual(
+    { ...normalizeThresholds({ multipleFacesSeconds: 5, headTurnSeconds: 99 }) },
+    { ...DEFAULT_THRESHOLDS, multipleFacesSeconds: 5 },
+  );
 });
 
 // Màu máy thí sinh: xét số khuôn mặt trước, rồi đến góc đầu hay hướng mắt vượt giới hạn.

@@ -109,7 +109,7 @@ class HubApiTests(unittest.TestCase):
         status, _, headers = self.call('/api/health', method='OPTIONS')
         self.assertEqual(status, 204)
         self.assertEqual(headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(headers['Access-Control-Allow-Methods'], 'GET, POST, PATCH, OPTIONS')
+        self.assertEqual(headers['Access-Control-Allow-Methods'], 'GET, POST, PATCH, DELETE, OPTIONS')
         self.assertEqual(headers['Access-Control-Allow-Headers'], 'Content-Type')
         self.assertEqual(headers['Cache-Control'], 'no-cache, no-store, must-revalidate')
 
@@ -143,6 +143,21 @@ class HubApiTests(unittest.TestCase):
         self.assertEqual(mine[0]['state'], 'warning')
         self.assertIsInstance(mine[0]['serverSeenAt'], int)
 
+    def test_delete_station_removes_from_snapshot(self):
+        """Kiểm tra DELETE /api/stations/<room>/<station> gỡ máy khỏi snapshot; cảnh báo giữ nguyên."""
+        other = dict(IDENTITY, stationId='KEEP-PC', candidateId='KEEP')
+        self.call('/api/stations', dict(IDENTITY, state='offline'), method='POST')
+        self.call('/api/stations', dict(other, state='normal'), method='POST')
+        self.call('/api/events', dict(IDENTITY, id='keep-event', timestamp=1, reviewed=False), method='POST')
+        status, body, _ = self.call('/api/stations/API-ROOM/API-PC', method='DELETE')
+        self.assertEqual((status, body), (200, {'ok': True}))
+        stations = self.snapshot()['stations']
+        self.assertFalse(any(s['stationId'] == 'API-PC' for s in stations))
+        self.assertTrue(any(s['stationId'] == 'KEEP-PC' for s in stations))
+        self.assertTrue(any(e['id'] == 'keep-event' for e in self.snapshot()['events']))
+        self.assertEqual(self.call('/api/stations/API-ROOM/API-PC', method='DELETE')[:2],
+                         (404, {'ok': False}))
+
     def test_patch_without_body_marks_reviewed(self):
         """Kiểm tra PATCH không kèm dữ liệu thì đánh dấu "đã xem", gửi reviewed=False thì bỏ dấu."""
         self.call('/api/events', dict(IDENTITY, id='api-patch', timestamp=5, reviewed=False), method='POST')
@@ -154,16 +169,27 @@ class HubApiTests(unittest.TestCase):
         self.assertFalse(event['reviewed'])
 
     def test_settings_round_trip_without_identity(self):
-        """Kiểm tra GET/POST /api/settings không cần identity; lưu được storeSnapshots."""
-        self.assertEqual(
-            self.call('/api/settings')[:2],
-            (200, {'ok': True, 'storeSnapshots': False, 'requireConsent': True}),
+        """Kiểm tra GET/POST /api/settings không cần identity; lưu được storeSnapshots + thresholds."""
+        status, body, _ = self.call('/api/settings')
+        self.assertEqual(status, 200)
+        self.assertEqual(body.get('ok'), True)
+        self.assertEqual(body.get('storeSnapshots'), False)
+        self.assertEqual(body.get('requireConsent'), True)
+        self.assertEqual(body.get('thresholds', {}).get('multipleFacesSeconds'), 2)
+        status, body, _ = self.call(
+            '/api/settings',
+            {'storeSnapshots': True, 'thresholds': {'multipleFacesSeconds': 5, 'headTurnSeconds': 99}},
+            method='POST',
         )
-        status, body, _ = self.call('/api/settings', {'storeSnapshots': True}, method='POST')
         self.assertEqual(status, 200)
         self.assertEqual(body.get('ok'), True)
         self.assertEqual(body.get('storeSnapshots'), True)
-        self.assertEqual(self.call('/api/settings')[1].get('storeSnapshots'), True)
+        self.assertEqual(body.get('thresholds', {}).get('multipleFacesSeconds'), 5)
+        # 99 ngoài 1–60 → giữ mặc định 3.
+        self.assertEqual(body.get('thresholds', {}).get('headTurnSeconds'), 3)
+        again = self.call('/api/settings')[1]
+        self.assertEqual(again.get('storeSnapshots'), True)
+        self.assertEqual(again.get('thresholds', {}).get('multipleFacesSeconds'), 5)
 
     def test_patch_with_verdict_false_alarm(self):
         """Kiểm tra PATCH kèm verdict=false_alarm được lưu; verdict lạ bị từ chối 400."""

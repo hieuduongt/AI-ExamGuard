@@ -4,7 +4,7 @@
  */
 import type { ExamEvent } from '@/domain/exam-types';
 import { emitDelivered, safeParse } from '@/services/browser-signals';
-import { postToHub } from './hub-transport';
+import { postToHubResult } from './hub-transport';
 
 // Các cảnh báo đang chờ tới hub của giám thị vẫn còn nguyên khi tải lại trang hoặc mất
 // mạng (vì được cất trong localStorage: bộ nhớ nhỏ của trình duyệt, tắt máy vẫn còn).
@@ -33,14 +33,21 @@ function readOutbox() {
  * Đây là gì: hàm bỏ một cảnh báo vào hộp thư đi.
  * Mục tiêu: không để mất cảnh báo nào, kể cả khi mạng đang hỏng.
  * Chức năng: bỏ bản cũ cùng mã (id) nếu có, rồi thêm cảnh báo mới vào cuối hàng kèm địa
- *   chỉ máy giám thị cần gửi tới; lưu lại vào localStorage.
+ *   chỉ máy giám thị cần gửi tới; lưu lại vào localStorage. Không lưu clip/ảnh (tránh đầy ổ nhớ trình duyệt).
  * Đầu ra: không trả về gì.
  * Dùng ở đâu: publishEvent() trong services/exam-sync.ts.
  * Liên kết với: flushPendingEvents() (lấy ra gửi đi).
  */
 export function enqueueEvent(hubUrl: string, event: ExamEvent) {
+  const light: ExamEvent = { ...event };
+  delete light.clip;
+  delete light.snapshots;
   const pending = readOutbox();
-  localStorage.setItem(OUTBOX_KEY, JSON.stringify([...pending.filter((item) => item.event.id !== event.id), { hubUrl, event }]));
+  try {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify([...pending.filter((item) => item.event.id !== light.id), { hubUrl, event: light }]));
+  } catch {
+    /* localStorage đầy — vẫn giữ trong RAM không được; bỏ qua chứ không chặn luồng gửi khác */
+  }
 }
 
 /**
@@ -59,15 +66,11 @@ export function getPendingEventCount() {
 /**
  * Đây là gì: hàm gửi hết các cảnh báo đang chờ trong hộp thư đi.
  * Mục tiêu: đưa cảnh báo tới máy giám thị ngay khi mạng cho phép.
- * Chức năng: nếu đang có một lượt gửi chạy thì dùng chung lượt đó. Nếu không, gửi lần
- *   lượt từng cảnh báo tới đúng máy giám thị của nó; máy nào gửi hỏng một lần thì bỏ qua
- *   các cảnh báo còn lại của máy đó trong lượt này. Gửi được cái nào thì xóa cái đó khỏi
- *   hộp và hô "đã gửi tới nơi".
+ * Chức năng: gửi lần lượt từng cảnh báo. Mất mạng / không tới hub → bỏ qua các cảnh báo còn
+ *   lại của cùng hub trong lượt này. Hub từ chối dữ liệu (4xx) → xóa mục đó (không kẹt cả hàng)
+ *   rồi thử cảnh báo tiếp theo.
  * Đầu ra: việc cần chờ, xong khi đã thử gửi hết lượt.
- * Dùng ở đâu: services/exam-sync.ts (publishEvent, publishStation) và testHubConnection()
- *   trong services/hub/hub-client.ts.
- * Liên kết với: postToHub() trong ./hub-transport.ts (gửi tới /api/events);
- *   emitDelivered() trong services/browser-signals.ts.
+ * Dùng ở đâu: services/exam-sync.ts và testHubConnection() trong services/hub/hub-client.ts.
  */
 export function flushPendingEvents(): Promise<void> {
   if (flushing) return flushing;
@@ -76,15 +79,18 @@ export function flushPendingEvents(): Promise<void> {
     const unavailableHubs = new Set<string>();
     for (const item of queue) {
       if (unavailableHubs.has(item.hubUrl)) continue;
-      if (!await postToHub('/api/events', item.event, 'POST', item.hubUrl)) {
+      const result = await postToHubResult('/api/events', item.event, 'POST', item.hubUrl);
+      if (result === 'unreachable') {
         unavailableHubs.add(item.hubUrl);
         continue;
       }
-      // Đọc lại hộp thư: trong lúc chờ gửi, có thể đã có cảnh báo khác được xếp thêm vào.
+      // ok hoặc rejected: gỡ khỏi hộp (rejected = gửi lại cũng không được).
       const remaining = readOutbox()
         .filter((pending) => pending.event.id !== item.event.id || pending.hubUrl !== item.hubUrl);
-      localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
-      emitDelivered(item.event.id);
+      try {
+        localStorage.setItem(OUTBOX_KEY, JSON.stringify(remaining));
+      } catch { /* ignore */ }
+      if (result === 'ok') emitDelivered(item.event.id);
     }
   })().finally(() => { flushing = null; });
   return flushing;

@@ -84,8 +84,8 @@ export function AdminScreen() {
    */
   function saveSettings() {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ thresholds: settings, roomName, stationCount, storeSnapshots, requireConsent }));
-    // Đẩy lên hub để máy thí sinh (máy khác) cũng nhận được công tắc lưu đoạn hình.
-    void publishHubSettings({ storeSnapshots, requireConsent });
+    // Đẩy lên hub để máy thí sinh (máy khác) nhận ngưỡng + công tắc lưu đoạn hình.
+    void publishHubSettings({ storeSnapshots, requireConsent, thresholds: settings });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 3000);
   }

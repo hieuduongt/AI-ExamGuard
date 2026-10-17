@@ -153,7 +153,9 @@ Cần Node.js 24.x (22.x vẫn chạy, chỉ cảnh báo phiên bản).
 ```bash
 npm ci               # cài thư viện (lần đầu, hoặc khi package-lock.json đổi)
 npm run dev          # HTTP: http://localhost:3000 (máy khác LAN thường không bật được webcam)
-npm run dev:https    # HTTPS LAN + webcam: https://<IP-LAN>:3000 (cert tự ký trong certs/; máy khác bấm “Advanced → Proceed”)
+npm run certs:dev    # Tạo lại cert HTTPS theo IP LAN hiện tại (đổi Wi‑Fi / IP thì chạy lại)
+npm run dev:https    # HTTPS LAN + webcam: https://<IP-LAN>:3000
+                     # Cert tự ký → máy khác: Advanced → Proceed (hoặc “Tiếp tục”). Sai IP trong cert → npm run certs:dev
                      # Tách hub: python ../desktop-hub/run_hub.py — web proxy /api → :8765
 npm run lint         # kiểm tra quy tắc viết code
 npx tsc --noEmit     # kiểm tra kiểu TypeScript

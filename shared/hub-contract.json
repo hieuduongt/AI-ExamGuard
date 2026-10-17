@@ -16,6 +16,7 @@
     "discover": "GET /api/discover",
     "postEvent": "POST /api/events",
     "postStation": "POST /api/stations",
+    "deleteStation": "DELETE /api/stations/{roomId}/{stationId}",
     "reviewEvent": "PATCH /api/events/{id}",
     "settings": "GET|POST /api/settings"
   }

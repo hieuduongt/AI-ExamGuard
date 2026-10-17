@@ -44,6 +44,23 @@ export function exceedsVisionLimits(metrics: VisionMetrics) {
 }
 
 /**
+ * Đây là gì: hàm chuẩn hóa một object ngưỡng (từ hub hoặc localStorage) thành bộ đủ và an toàn.
+ * Mục tiêu: chỉ nhận số 1–60 giây; thiếu/sai thì giữ mặc định từng ô.
+ */
+export function normalizeThresholds(input: unknown): BehaviorThresholds {
+  const thresholds = { ...DEFAULT_THRESHOLDS };
+  if (!input || typeof input !== 'object') return thresholds;
+  const raw = input as Partial<BehaviorThresholds>;
+  for (const key of Object.keys(DEFAULT_THRESHOLDS) as Array<keyof BehaviorThresholds>) {
+    const value = raw[key];
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 60) {
+      thresholds[key] = value;
+    }
+  }
+  return thresholds;
+}
+
+/**
  * Đây là gì: hàm đọc ngưỡng thời gian mà trang quản trị đã lưu.
  * Mục tiêu: dùng đúng cài đặt của quản trị, nhưng không để dữ liệu hỏng làm sai hệ thống.
  * Chức năng: nhận chuỗi đã lưu, đọc phần "thresholds"; giá trị nào là số hợp lệ trong
@@ -53,18 +70,13 @@ export function exceedsVisionLimits(metrics: VisionMetrics) {
  * Dùng ở đâu: startMonitoring trong
  *   web/src/features/candidate/hooks/use-monitoring-session.ts; web/tests/unit/domain.test.cjs.
  * Liên kết với: SETTINGS_STORAGE_KEY, DEFAULT_THRESHOLDS; nơi lưu là
- *   web/src/features/admin/admin-screen.tsx.
+ *   web/src/features/admin/admin-screen.tsx; hub `/api/settings` cũng mang thresholds.
  */
 export function parseSavedThresholds(raw: string | null): BehaviorThresholds {
-  const thresholds = { ...DEFAULT_THRESHOLDS };
-  if (!raw) return thresholds;
+  if (!raw) return { ...DEFAULT_THRESHOLDS };
   try {
-    const parsed = JSON.parse(raw) as { thresholds?: BehaviorThresholds };
-    for (const key of Object.keys(DEFAULT_THRESHOLDS) as Array<keyof BehaviorThresholds>) {
-      const value = parsed.thresholds?.[key];
-      if (typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 60) thresholds[key] = value;
-    }
-    return thresholds;
+    const parsed = JSON.parse(raw) as { thresholds?: unknown };
+    return normalizeThresholds(parsed.thresholds);
   } catch {
     return { ...DEFAULT_THRESHOLDS };
   }
