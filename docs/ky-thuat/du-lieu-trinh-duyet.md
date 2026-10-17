@@ -1,8 +1,8 @@
 # Dữ liệu lưu trong trình duyệt, Firestore và tín hiệu nội bộ
 
 **Nói ngắn gọn:** mỗi trình duyệt có một "ngăn kéo" nhỏ (localStorage) để nhớ vài thứ qua các lần mở:
-địa chỉ máy giám thị, cấu hình phòng, cảnh báo chưa gửi được, có bật tiếng hay không. Tài liệu này liệt kê
-từng ngăn chứa gì, ai ghi vào.
+địa chỉ máy giám thị, cấu hình phòng (bản cục bộ), cảnh báo chữ chưa gửi được. Tài liệu này liệt kê
+từng ngăn chứa gì, ai ghi vào. (Âm thanh cảnh báo đã gỡ — không còn khóa bật/tắt tiếng.)
 
 Đổi bất kỳ tên nào dưới đây sẽ làm mất dữ liệu đã lưu trên máy người dùng hoặc làm các tab/máy
 không hiểu nhau. Nếu buộc phải đổi cấu trúc, hãy tăng hậu tố phiên bản (`v2` → `v3`) và viết code đọc bản cũ.
@@ -11,9 +11,9 @@ không hiểu nhau. Nếu buộc phải đổi cấu trúc, hãy tăng hậu t�
 
 | Khóa | Nội dung | Ghi bởi |
 | --- | --- | --- |
-| `examguard:settings:v2` | Cấu hình quản trị: `thresholds`, `roomName`, `stationCount`, `storeSnapshots`, `requireConsent` | `features/admin` (đọc lại ngưỡng ở `domain/thresholds.ts`) |
+| `examguard:settings:v2` | Cấu hình quản trị cục bộ: `thresholds`, `roomName`, `stationCount`, `storeSnapshots`, `requireConsent` | `features/admin` (khi Lưu còn đẩy lên hub `/api/settings`; thí sinh ưu tiên đọc hub) |
 | `examguard:teacher-hub:v1` | Địa chỉ máy giám thị đã chuẩn hóa, ví dụ `http://192.168.1.10:8765` | `services/hub/hub-url.ts` |
-| `examguard:outbox:v1` | Hàng đợi cảnh báo chưa gửi được: `[{ hubUrl, event }]` | `services/hub/outbox.ts` |
+| `examguard:outbox:v1` | Hàng đợi cảnh báo **chữ** chưa gửi được: `[{ hubUrl, event }]` (không nhét clip/ảnh) | `services/hub/outbox.ts` |
 | `examguard:events:v2` | Cảnh báo của chế độ demo (tối đa 500) | `services/local-demo/local-store.ts` |
 | `examguard:stations:v2` | Trạng thái máy của chế độ demo (tối đa 150) | `services/local-demo/local-store.ts` |
 
@@ -23,7 +23,7 @@ Xóa được, dữ liệu ca thi thật nằm ở trung tâm LAN chứ không n
 
 - `teacher-hub`, `events`, `stations`: xóa thoải mái (địa chỉ cũ, dữ liệu demo cũ).
 - `outbox`: **không xóa trên máy học sinh đang thi**, vì sẽ mất các cảnh báo còn chờ gửi lại.
-- `settings`: mất cấu hình trang Quản trị (tên phòng, ngưỡng), quay về mặc định.
+- `settings`: mất bản cục bộ trang Quản trị (tên phòng, ngưỡng); nếu hub vẫn còn settings thì máy thí sinh vẫn đọc được từ hub.
 
 Xóa riêng các khóa có thể gây lỗi, giữ cấu hình (dán vào Console của DevTools trên đúng trang đó):
 

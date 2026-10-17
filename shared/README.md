@@ -18,7 +18,8 @@ bảng mật mã**. File [`hub-contract.json`](hub-contract.json) chính là b�
 | `maxBodyBytes`, `eventLimit` | Giới hạn ~1,5 MB mỗi yêu cầu (đủ kèm đoạn hình ngắn) / giữ 500 cảnh báo mới nhất | `config.py` |
 | `identityFields` | Trường bắt buộc khi gửi cảnh báo / trạng thái máy: phòng, máy, SBD, họ tên | `http_handler.py` và `web/src/domain/exam-types.ts` |
 | `alertTypes` | Danh sách 7 loại cảnh báo | `web/src/domain/exam-types.ts`, `alert-catalog.ts` |
-| `endpoints` | Các API LAN | `http_handler.py` và `web/src/services/hub/`; chi tiết ở [docs/ky-thuat/api-lan.md](../docs/ky-thuat/api-lan.md) |
+| `verdicts` | Kết luận giám thị: `confirmed`, `false_alarm` | `exam_store.py`, `exam-types.ts`, CSV biên bản |
+| `endpoints` | Các API LAN (kể cả `settings`, `deleteStation`, `reviewEvent`) | `http_handler.py` và `web/src/services/hub/`; chi tiết ở [docs/ky-thuat/api-lan.md](../docs/ky-thuat/api-lan.md) |
 
 ## Vì sao code không đọc trực tiếp file này?
 

@@ -21,8 +21,8 @@ kéo dài đủ lâu, giám thị là người nhìn và quyết định.
 | Đối tượng | Trang | Việc chính |
 | --- | --- | --- |
 | Thí sinh | `/thi-sinh` | Khai báo họ tên, SBD, phòng, số máy → kết nối máy giám thị (gõ mã 4 số hoặc địa chỉ) → đồng ý giám sát → bật webcam |
-| Giám thị | `/giam-thi` | Mã kết nối + địa chỉ cho học sinh, sơ đồ máy (xanh/vàng/đỏ/mất kết nối), luồng cảnh báo kèm tiếng báo động, xem chi tiết, đánh dấu đã xác minh, xuất CSV |
-| Nhà trường / đơn vị tổ chức | `/quan-tri` | Đặt tên phòng, ngưỡng thời gian, tùy chọn quyền riêng tư, xuất cấu hình JSON |
+| Giám thị | `/giam-thi` | Mã kết nối + địa chỉ cho học sinh, sơ đồ máy (xanh/vàng/đỏ/mất kết nối), luồng cảnh báo (dải đỏ, không tiếng bíp), xem chi tiết / đoạn hình, Xác nhận đúng hoặc Báo nhầm, xuất CSV / biên bản, xóa máy khỏi lưới |
+| Nhà trường / đơn vị tổ chức | `/quan-tri` | Đặt tên phòng, ngưỡng thời gian (kể cả cúi/ngẩng riêng), tùy chọn quyền riêng tư (đoạn hình), **Lưu** đẩy cấu hình lên hub, xuất cấu hình JSON |
 
 Bốn mục tiêu:
 
@@ -45,7 +45,7 @@ và các thao tác trong cửa sổ ứng dụng (rời cửa sổ bài thi, Ctr
 | 3. AI phân tích | MediaPipe Face Landmarker tìm khuôn mặt và điểm mốc → số mặt, góc quay, góc cúi/ngẩng, hướng mắt |
 | 4. Behavior Engine theo dõi | Đếm thời gian tín hiệu; chưa đủ ngưỡng thì chưa cảnh báo, nhiễu ngắn và camera đứng hình không được tính |
 | 5. Gửi sự kiện | Đủ ngưỡng → gửi qua LAN tới máy giám thị; mất mạng thì giữ lại và gửi lại |
-| 6. Giám thị xác minh | Dashboard hiện phòng, máy, họ tên, SBD, loại tín hiệu, thời điểm, trạng thái xác minh; sự kiện vẫn được giữ khi thí sinh đã trở lại bình thường |
+| 6. Giám thị kết luận | Dashboard hiện phòng, máy, họ tên, SBD, loại tín hiệu, thời điểm; giám thị bấm **Xác nhận đúng** hoặc **Báo nhầm** (có thể xem đoạn hình nếu đã bật); sự kiện vẫn được giữ khi thí sinh đã trở lại bình thường |
 
 ## 4. Dữ liệu đi như thế nào?
 
@@ -61,7 +61,9 @@ flowchart LR
   E -->|POST /api/events<br/>lỗi mạng: xếp hàng gửi lại| H[(Trung tâm LAN<br/>trên máy giám thị)]
   C -->|mỗi 2 giây:<br/>POST /api/stations| H
   H -->|mỗi 1 giây:<br/>GET /api/snapshot| D[Dashboard giám thị]
-  D -->|Đã xác minh:<br/>PATCH /api/events/id| H
+  D -->|Xác nhận đúng / Báo nhầm:<br/>PATCH /api/events/id| H
+  A[Quản trị Lưu] -->|POST /api/settings<br/>ngưỡng + đoạn hình| H
+  H -->|GET /api/settings| B
 ```
 
 Trước đó, máy thí sinh tìm máy giám thị bằng **mã kết nối**: khi trang Giám thị đang mở, trung tâm trên máy
@@ -69,8 +71,9 @@ giáo viên cứ 2 giây phát một gói tin UDP quảng bá (cổng `8766`) ma
 máy thí sinh nghe được gói đó, nên khi học sinh gõ đúng mã, trang thí sinh biết ngay địa chỉ để kết nối.
 Mạng chặn quảng bá thì học sinh gõ địa chỉ như cũ. Chi tiết: [ky-thuat/api-lan.md](ky-thuat/api-lan.md).
 
-Video **không rời khỏi máy thí sinh**. Chỉ có các con số (số khuôn mặt, góc ước tính, FPS) và sự kiện cảnh báo
-được gửi đi. Danh tính do thí sinh khai báo; sản phẩm không nhận diện danh tính bằng khuôn mặt.
+Video **không được stream liên tục** khỏi máy thí sinh. Chỉ có các con số (số khuôn mặt, góc ước tính, FPS),
+sự kiện cảnh báo, và (nếu nhà trường bật) đoạn hình ngắn kèm cảnh báo được gửi đi. Danh tính do thí sinh khai báo;
+sản phẩm không nhận diện danh tính bằng khuôn mặt.
 
 ## 5. Hai phần mềm và vai trò
 
@@ -126,8 +129,9 @@ Hạn chế hiện tại (theo hồ sơ dự án):
 4. Cúi đầu lâu có thể chỉ là đang viết nháp — cảnh báo chỉ nhắc giám thị quan sát thêm.
 5. Bản LAN cần thử thêm với nhiều máy thí sinh trước khi dùng cho phòng thi quy mô lớn.
 
-Hướng cải tiến: thử với nhiều học sinh, webcam và điều kiện ánh sáng; hiệu chỉnh ngưỡng theo kết quả thử nghiệm;
-bổ sung bảo mật và phân quyền; kiểm thử nhiều máy cùng kết nối một máy giám thị; cải thiện giao diện cảnh báo.
+Đã cải tiến theo góp ý: nút Xác nhận đúng / Báo nhầm + đếm; tách ngưỡng cúi/ngẩng; đoạn hình ngắn + biên bản;
+đồng bộ ngưỡng/privacy qua hub; xóa máy trên lưới; HTTPS LAN khi demo nhiều máy; gỡ âm thanh cảnh báo.
+Hướng tiếp: thử với nhiều học sinh/webcam/ánh sáng; bảo mật và phân quyền; kiểm thử nhiều máy cùng một hub.
 Các vấn đề kỹ thuật cụ thể: [van-de-ton-dong.md](van-de-ton-dong.md).
 
 ## Đọc tiếp

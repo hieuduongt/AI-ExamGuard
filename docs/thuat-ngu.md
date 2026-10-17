@@ -24,10 +24,12 @@ Giải thích bằng lời thường trước, nghĩa kỹ thuật trong dự á
 | **Máy thi / station** | Một máy học sinh. | Xác định bằng mã phòng + số máy. |
 | **Cảnh báo / sự kiện / event** | Một lần phát hiện dấu hiệu cần giám thị chú ý. | Gửi kèm phòng, máy, họ tên, SBD, loại, thời điểm. |
 | **Nhịp tim / heartbeat** | Cứ 2 giây máy thi báo "tôi vẫn đây". | Im lặng quá 7 giây thì giám thị thấy máy "mất kết nối". |
-| **Ngưỡng / threshold** | Một dấu hiệu phải kéo dài bao lâu mới đáng báo. | Mặc định: vắng mặt 5 giây, nhiều mặt 2 giây, quay đầu 3 giây, mắt lệch 5 giây. |
+| **Ngưỡng / threshold** | Một dấu hiệu phải kéo dài bao lâu mới đáng báo. | Mặc định: vắng mặt 5s, nhiều mặt 2s, quay đầu 3s, cúi/ngẩng 6s, mắt lệch 5s. Quản trị Lưu → đẩy lên hub. |
 | **Cooldown** | Thời gian "nghỉ" trước khi được báo lại cùng chuyện đó. | Mặc định 12 giây, tính riêng từng loại cảnh báo. |
-| **Xác minh** | Giám thị đã tới xem và ghi nhận. | Nút "Đánh dấu đã xác minh"; AI không bao giờ tự kết luận. |
-| **Hàng đợi gửi lại / outbox** | Hộp thư chờ: mất mạng thì cất thư lại, có mạng thì gửi tiếp. | Lưu trong trình duyệt, không gửi trùng. |
+| **Kết luận / verdict** | Giám thị ghi nhận sau khi kiểm tra. | **Xác nhận đúng** (`confirmed`) hoặc **Báo nhầm** (`false_alarm`). AI không tự kết luận. |
+| **Đoạn hình ngắn / clip** | Vài giây quanh lúc cảnh báo để giám thị xem lại. | ~3s trước + ~2s trong lúc; mặc định tắt; lưu trong RAM hub. |
+| **Biên bản đã xác nhận** | CSV các lần giám thị đã kết luận. | Gồm cả Xác nhận đúng và Báo nhầm; không gồm chưa bấm nút. |
+| **Hàng đợi gửi lại / outbox** | Hộp thư chờ: mất mạng thì cất thư lại, có mạng thì gửi tiếp. | Lưu chữ trong trình duyệt; không nhét clip vào localStorage. |
 | **AI tạm dừng / stalled** | Camera vẫn mở nhưng AI không nhận được hình mới. | 3 giây không có khung hình mới được phân tích. |
 
 ## AI

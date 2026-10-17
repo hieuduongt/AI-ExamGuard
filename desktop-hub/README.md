@@ -33,9 +33,11 @@ Máy chủ chỉ dùng thư viện chuẩn của Python, không cần cài thêm
 | `GET /api/health` | Máy học sinh | "Bưu điện có mở cửa không?" khi bấm Kiểm tra kết nối |
 | `GET /api/runtime` | Trang giám thị | Lấy địa chỉ LAN hiện tại, phiên bản, mã kết nối để hiện cho học sinh |
 | `GET /api/snapshot` | Trang giám thị, mỗi giây | Lấy toàn bộ cảnh báo + trạng thái các máy |
-| `POST /api/events` | Máy học sinh | Gửi một cảnh báo |
+| `POST /api/events` | Máy học sinh | Gửi một cảnh báo (có thể kèm đoạn hình ngắn) |
 | `POST /api/stations` | Máy học sinh, mỗi 2 giây | Gửi nhịp tim (trạng thái máy, trạng thái AI) |
-| `PATCH /api/events/{id}` | Trang giám thị | Đánh dấu một cảnh báo đã xác minh |
+| `DELETE /api/stations/{room}/{máy}` | Trang giám thị | Gỡ máy khỏi lưới (không xóa cảnh báo đã ghi) |
+| `PATCH /api/events/{id}` | Trang giám thị | Đánh dấu đã xem + kết luận `confirmed` / `false_alarm` |
+| `GET` / `POST /api/settings` | Quản trị / thí sinh | Cấu hình phòng: ngưỡng giây + quyền riêng tư (đoạn hình) |
 | `GET /api/discover?code=` | Máy học sinh | "Trong mạng có máy giám thị nào mang mã này không?" |
 
 Mã lỗi, giới hạn, dạng dữ liệu, gói tin UDP: [docs/ky-thuat/api-lan.md](../docs/ky-thuat/api-lan.md).
@@ -47,11 +49,11 @@ desktop-hub/
 ├── app_desktop.py              Điểm khởi động (`python app_desktop.py`), cũng là điểm vào khi build EXE
 ├── run_hub.py                  Chỉ bật trung tâm LAN (cổng 8765) + bộ tìm máy, không mở cửa sổ (macOS/Linux, chạy thử)
 ├── examguard_desktop/          Toàn bộ logic, mỗi file một việc:
-│   ├── config.py               Phiên bản, cổng 8765 (TCP) và 8766 (UDP), giới hạn 1 MB / 500 cảnh báo
+│   ├── config.py               Phiên bản, cổng 8765 (TCP) và 8766 (UDP), giới hạn ~1,5 MB / 500 cảnh báo
 │   ├── app.py                  main(): bật máy chủ → bật bộ tìm máy → mở cửa sổ → đóng cửa sổ thì tắt máy chủ
 │   ├── server.py               Tạo máy chủ ở 0.0.0.0, tự đổi cổng nếu 8765 đang bận
-│   ├── http_handler.py         Phục vụ trang web + các API /api/...
-│   ├── exam_store.py           Kho dữ liệu trong bộ nhớ: cảnh báo, trạng thái máy (có khóa đa luồng)
+│   ├── http_handler.py         Phục vụ trang web + các API /api/... (events, stations, settings, DELETE…)
+│   ├── exam_store.py           Kho dữ liệu trong bộ nhớ: cảnh báo (+ verdict/clip), máy, settings (khóa đa luồng)
 │   ├── discovery.py            Tự tìm máy giám thị: mã kết nối 4 số, phát/nghe UDP 8766
 │   ├── desktop_window.py       Cửa sổ chính và cửa sổ giám thị (pywebview)
 │   ├── network.py              Tìm địa chỉ IP LAN để hiển thị cho học sinh

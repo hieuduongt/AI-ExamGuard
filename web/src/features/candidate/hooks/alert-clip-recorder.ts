@@ -1,7 +1,8 @@
 /**
  * Ghi đoạn hình ngắn quanh lúc cảnh báo: vài giây trước + vài giây trong lúc xảy ra.
  * Cách làm: giữ vòng đệm khung hình trên canvas, khi có cảnh báo thì quay lại một file
- * video ngắn (MediaRecorder) rồi gửi data-URL. Chạy được với webcam lẫn file video thử.
+ * video ngắn (MediaRecorder) rồi gửi data-URL kèm sự kiện lên hub.
+ * Chỉ chạy khi Quản trị bật “Lưu đoạn hình ngắn” và đã Lưu lên hub.
  */
 
 const TARGET_WIDTH = 320;
@@ -9,7 +10,7 @@ const PRE_ALERT_MS = 3000;
 const POST_ALERT_MS = 2000;
 const FRAME_INTERVAL_MS = 125; // ~8 fps trong vòng đệm và khi encode
 const VIDEO_BITS_PER_SECOND = 200_000;
-/** Base64 data-URL tối đa — chừa chỗ cho JSON cảnh báo trong giới hạn ~1 MB của hub. */
+/** Base64 data-URL tối đa — chừa chỗ cho JSON cảnh báo trong giới hạn ~1,5 MB của hub. */
 const MAX_CLIP_DATA_URL_CHARS = 700_000;
 
 function sleep(ms: number) {

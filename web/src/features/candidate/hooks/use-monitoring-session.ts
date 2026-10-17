@@ -1,8 +1,9 @@
 /**
  * File này là "bộ não" của phiên giám sát trên máy thí sinh: mở webcam, cho AI đọc từng khung
  * hình, chấm hành vi, phát cảnh báo và đều đặn báo trạng thái máy về cho giám thị.
- * Thuộc phần logic thí sinh (web/src/features/candidate/hooks/). AI nhìn ảnh camera để ước
- * lượng hướng đầu, hướng mắt. Khi nhà trường bật lưu đoạn hình, gửi kèm clip ngắn quanh cảnh báo.
+ * Đọc ngưỡng + công tắc đoạn hình từ hub (ưu tiên) khi bắt đầu và đang chạy phiên.
+ * Khi nhà trường bật lưu đoạn hình, gửi kèm clip ngắn quanh cảnh báo (alert-clip-recorder).
+ * Thuộc phần logic thí sinh (web/src/features/candidate/hooks/).
  */
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -35,8 +36,8 @@ const initialMetrics: VisionMetrics = EMPTY_METRICS;
 const SNAPSHOT_INTERVAL_MS = 500;
 const SNAPSHOT_COUNT = 6;
 
-// Thông tin trang thí sinh truyền vào: tình trạng kết nối máy giám thị, hàm đếm lại
-// số cảnh báo còn chờ gửi, và (tùy chọn) chế độ chạy video thử nghiệm.
+// Thông tin trang thí sinh truyền vào: tình trạng kết nối máy giám thị và hàm đếm lại
+// số cảnh báo còn chờ gửi. experimentMode là tùy chọn nội bộ (không phải luồng demo chính).
 type Options = { hubState: HubState; refreshPendingCount: () => void; experimentMode?: boolean };
 
 /**

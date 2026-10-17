@@ -1,11 +1,10 @@
 /**
- * File này định nghĩa "hình dạng" chung của dữ liệu trong một phiên thi: cảnh báo, trạng thái
- * máy thí sinh, các con số AI đọc từ camera, ngưỡng thời gian. Thuộc phần luật nghiệp vụ
- * (web/src/domain/).
- * Các tên trường ở đây cũng là "hợp đồng" của API (cửa giao tiếp giữa hai chương trình) qua
- * mạng LAN với desktop-hub/ (chương trình Python trên máy giám thị, nơi mọi máy thí sinh gửi
- * cảnh báo về; xem docs/ky-thuat/api-lan.md). Không được đổi tên trường nào ở đây nếu chưa
- * sửa tương ứng bên desktop hub.
+ * File này định nghĩa "hình dạng" chung của dữ liệu trong một phiên thi: cảnh báo (kèm verdict?,
+ * clip?), trạng thái máy thí sinh, các con số AI đọc từ camera, ngưỡng thời gian (kể cả
+ * headPoseSeconds). Thuộc phần luật nghiệp vụ (web/src/domain/).
+ * Các tên trường ở đây cũng là "hợp đồng" của API qua mạng LAN với desktop-hub/ (xem
+ * docs/ky-thuat/api-lan.md và shared/hub-contract.json). Không được đổi tên trường nào ở đây
+ * nếu chưa sửa tương ứng bên desktop hub và hợp đồng.
  */
 
 // Mức độ của cảnh báo: thông tin, cần chú ý (vàng), nghiêm trọng (đỏ).

@@ -1,8 +1,9 @@
 """
 Kho dữ liệu kỳ thi nằm trong bộ nhớ của máy chủ trung tâm (hub), dùng chung cho mọi yêu cầu.
 
-Gồm danh sách cảnh báo và trạng thái từng máy thi. Dữ liệu mất khi đóng ứng dụng (không ghi
-ra đĩa).
+Gồm: danh sách cảnh báo (có thể kèm clip + verdict confirmed/false_alarm), trạng thái từng
+máy thi, và cài đặt phòng (ngưỡng + quyền riêng tư). Dữ liệu mất khi đóng ứng dụng (không ghi
+ra đĩa) — chủ đích quyền riêng tư; giáo viên cần xuất CSV/biên bản trước khi tắt.
 """
 import threading
 import time

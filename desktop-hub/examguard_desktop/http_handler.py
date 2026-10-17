@@ -147,7 +147,7 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
         Chức năng: đổi payload thành JSON UTF-8 gọn, gửi mã trạng thái (ví dụ 200 là thành công,
           404 là không tìm thấy), loại nội dung, độ dài, rồi gửi phần thân.
         Đầu ra: không trả về gì; câu trả lời đã được gửi đi.
-        Dùng ở đâu: do_GET, do_POST, do_PATCH.
+        Dùng ở đâu: do_GET, do_POST, do_PATCH, do_DELETE.
         Liên kết với: end_headers.
         """
         body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -284,10 +284,11 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
 
     def do_PATCH(self):
         """
-        Đây là gì: hàm sửa một phần dữ liệu (PATCH): đánh dấu cảnh báo đã xem/chưa xem.
-        Mục tiêu: giám thị ghi lại cảnh báo nào mình đã kiểm tra.
-        Chức năng: chỉ nhận đường dẫn /api/events/<mã>; đọc "reviewed" trong dữ liệu gửi kèm,
-          nếu không gửi dữ liệu thì coi như "đã xem". Trả 200 nếu tìm thấy cảnh báo, 404 nếu không.
+        Đây là gì: hàm sửa một phần dữ liệu (PATCH): đánh dấu cảnh báo đã xem + kết luận.
+        Mục tiêu: giám thị ghi lại cảnh báo nào mình đã kiểm tra và kết luận đúng hay báo nhầm.
+        Chức năng: chỉ nhận đường dẫn /api/events/<mã>; đọc "reviewed" và "verdict"
+          ("confirmed" | "false_alarm"); nếu không gửi dữ liệu thì coi như reviewed=true
+          (không đổi verdict). verdict lạ → 400. Trả 200 nếu tìm thấy, 404 nếu không.
         Đầu ra: không trả về gì; câu trả lời đã được gửi đi.
         Dùng ở đâu: Python tự gọi khi có PATCH. Phía web: web/src/services/exam-sync.ts.
         Liên kết với: exam_store.set_reviewed, read_json.

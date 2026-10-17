@@ -112,10 +112,10 @@ export function removeLocalStation(roomId: string, stationId: string) {
 }
 
 /**
- * Đây là gì: hàm đánh dấu một cảnh báo đã cất trong trình duyệt là "đã xem"/"chưa xem".
- * Mục tiêu: giám thị ghi nhận đã xem xét cảnh báo khi chạy thử.
- * Chức năng: sửa trường reviewed của cảnh báo có mã id, lưu lại, rồi hô tín hiệu và nhắn
- *   tin cho các thẻ khác.
+ * Đây là gì: hàm đánh dấu một cảnh báo đã cất trong trình duyệt là đã xem + kết luận.
+ * Mục tiêu: giám thị ghi nhận đã kiểm tra khi chạy thử (Xác nhận đúng / Báo nhầm).
+ * Chức năng: sửa reviewed và verdict (nếu có) của cảnh báo có mã id, lưu lại, rồi hô tín hiệu
+ *   và nhắn tin cho các thẻ khác.
  * Đầu ra: không trả về gì.
  * Dùng ở đâu: markEventReviewed() trong services/exam-sync.ts.
  * Liên kết với: localEvents(), broadcast().

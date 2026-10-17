@@ -1,8 +1,9 @@
 # API trung tâm cảnh báo LAN
 
-**Nói ngắn gọn:** trung tâm LAN trên máy giáo viên giống một bưu điện có 7 ô cửa giao dịch (API). Máy học sinh
-tới ô "gửi cảnh báo" và ô "báo bình an mỗi 2 giây"; trang Giám thị tới ô "cho xem hết thư" mỗi giây. Ngoài ra
-bưu điện còn "hô" qua loa (UDP) để máy học sinh tìm thấy nó bằng mã 4 số. Phần dưới là chi tiết cho lập trình viên.
+**Nói ngắn gọn:** trung tâm LAN trên máy giáo viên giống một bưu điện có nhiều ô cửa giao dịch (API). Máy học sinh
+tới ô "gửi cảnh báo" và ô "báo bình an mỗi 2 giây"; trang Giám thị tới ô "cho xem hết thư" mỗi giây, ô kết luận
+đúng/nhầm, ô xóa máy; Quản trị tới ô "cài đặt phòng". Ngoài ra bưu điện còn "hô" qua loa (UDP) để máy học sinh
+tìm thấy nó bằng mã 4 số. Phần dưới là chi tiết cho lập trình viên.
 
 Máy chủ trong `desktop-hub/examguard_desktop/http_handler.py`, mặc định cổng `8765` (bận thì tự chọn cổng khác;
 đổi bằng biến môi trường `EXAMGUARD_PORT`). Kiểm thử hợp đồng: `desktop-hub/tests/test_hub_api.py`.
@@ -51,7 +52,7 @@ Thân: một `ExamEvent` (xem `web/src/domain/exam-types.ts`). Bắt buộc `roo
 | Kết quả | Mã |
 | --- | --- |
 | Thành công (kể cả gửi lại trùng `id` — bản cũ được giữ nguyên) | `201 {"ok": true}` |
-| JSON lỗi / không phải object / quá 1 MB | `400 {"ok": false, "error": "Dữ liệu không hợp lệ"}` |
+| JSON lỗi / không phải object / quá ~1,5 MB | `400 {"ok": false, "error": "Dữ liệu không hợp lệ"}` |
 | Thiếu thông tin thí sinh | `400 {"ok": false, "error": "Thiếu thông tin thí sinh hoặc máy thi"}` |
 | Thiếu `id` | `400 {"ok": false, "error": "Thiếu mã sự kiện"}` |
 
@@ -65,14 +66,23 @@ Thân: một `StationStatus`. Bắt buộc 4 trường thông tin thí sinh như
 Giám thị bấm nút xóa máy. Chỉ xóa bản ghi station; **không** xóa cảnh báo đã ghi.
 Trả `200 {"ok": true}` nếu đã xóa, `404 {"ok": false}` nếu không có máy đó.
 
-### `PATCH /api/events/{id}` — đánh dấu xác minh / kết luận
+### `PATCH /api/events/{id}` — đánh dấu đã xem / kết luận
 Thân: `{"reviewed": true|false, "verdict"?: "confirmed"|"false_alarm"}`.
 Thân rỗng hoặc không hợp lệ được hiểu là `reviewed = true` (không đổi `verdict`).
 `verdict` lạ → `400 {"ok": false, "error": "Kết luận không hợp lệ"}`.
 Trả `200 {"ok": true}` nếu tìm thấy, `404 {"ok": false}` nếu không.
 
+### `GET /api/settings` — đọc cấu hình phòng
+`200 {"ok": true, "storeSnapshots": false, "requireConsent": true, "thresholds": { ... }}`
+— máy thí sinh / trang quản trị đọc ngưỡng giây và công tắc quyền riêng tư đang dùng chung trên hub.
+
+### `POST /api/settings` — ghi cấu hình phòng
+Thân: object có thể gồm `storeSnapshots`, `requireConsent`, `thresholds` (các khóa ngưỡng giây 1–60).
+Trả `200 {"ok": true, ...}` với bản đã lưu. Không cần trường identity thí sinh.
+Trang Quản trị gọi khi bấm **Lưu thay đổi**.
+
 ### Khác
-`POST`/`PATCH` vào đường dẫn không có → `404 {"ok": false, "error": "Không tìm thấy API"}`.
+`POST`/`PATCH`/`DELETE` vào đường dẫn không có → `404 {"ok": false, "error": "Không tìm thấy API"}`.
 
 ## Tự tìm máy giám thị (UDP, cổng `8766`)
 

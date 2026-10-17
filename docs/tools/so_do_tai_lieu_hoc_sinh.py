@@ -180,7 +180,7 @@ def draw_tong_quan():
     d.label(490, 175, "cảnh báo + nhịp tim 2 giây/lần", 13, BLUE, True)
     d.arrow([(600, 262), (678, 262)], GREEN)
     d.box(680, 110, 290, 290, "Máy giám thị",
-          "• Trung tâm LAN (cổng 8765): nhận và cất mọi cảnh báo\n• Màn hình Giám thị: sơ đồ máy xanh / vàng / đỏ / xám, tiếng bíp, xuất báo cáo",
+          "• Trung tâm LAN (cổng 8765): nhận và cất mọi cảnh báo\n• Màn hình Giám thị: sơ đồ máy xanh / vàng / đỏ / xám, dải đỏ, xuất báo cáo",
           GREEN_BG, GREEN, align="left")
     d.arrow([(825, 400), (825, 428)], AMBER)
     d.box(700, 430, 250, 70, "Giám thị", "đi tới tận nơi xem và tự quyết định", AMBER_BG, AMBER)

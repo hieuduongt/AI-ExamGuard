@@ -25,7 +25,8 @@ import { useMonitoringSession } from './hooks/use-monitoring-session';
  * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình) của
  *   cả trang thí sinh /thi-sinh.
  * Mục tiêu: dẫn thí sinh từ bước nhập thông tin đến lúc camera giám sát chạy trong giờ thi.
- * Chức năng: lấy dữ liệu từ 4 hook; nếu địa chỉ có ?thu-nghiem=1 thì bật chế độ chạy video thử.
+ * Chức năng: lấy dữ liệu từ các hook phiên / kết nối / hộp thư đi. Tham số ?thu-nghiem=1
+ *   bật chế độ nội bộ (video file) — không phải luồng demo chính với giám khảo.
  * Đầu ra: giao diện trang thí sinh.
  * Dùng ở đâu: web/src/app/thi-sinh/page.tsx.
  */

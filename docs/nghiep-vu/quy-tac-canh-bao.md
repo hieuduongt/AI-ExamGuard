@@ -37,11 +37,15 @@ AI đang đếm gì.
 
 ## 3. Ngưỡng có thể chỉnh
 
-Trang Quản trị cho chỉnh 5 ngưỡng thời gian (không thấy mặt, nhiều khuôn mặt, quay đầu, mắt lệch,
-cooldown), mỗi giá trị từ 1 đến 60 giây. Cấu hình được lưu **trong trình duyệt của máy đó**
-(khóa `examguard:settings:v2`). Trang thí sinh đọc lại khi bấm bắt đầu; giá trị ngoài 1–60 bị bỏ qua
-và dùng mặc định. Giới hạn góc (14°, 20°, 0,55, 0,7) không chỉnh trên giao diện, nằm ở
-`web/src/domain/thresholds.ts`.
+Trang Quản trị cho chỉnh các ngưỡng thời gian (không thấy mặt, nhiều khuôn mặt, quay đầu, **cúi/ngẩng**,
+mắt lệch, cooldown), mỗi giá trị từ 1 đến 60 giây. Bấm **Lưu thay đổi** sẽ:
+
+1. Lưu vào trình duyệt máy quản trị (khóa `examguard:settings:v2`).
+2. Đẩy lên hub (`POST /api/settings`) kèm công tắc quyền riêng tư (đồng ý giám sát, lưu đoạn hình).
+
+Máy thí sinh đọc cấu hình từ hub khi bắt đầu phiên và định kỳ khi đang chạy (ưu tiên hub hơn local).
+Giá trị ngoài 1–60 bị bỏ qua và dùng mặc định. Giới hạn góc (14°, 20°, 0,55, 0,7) không chỉnh trên giao diện,
+nằm ở `web/src/domain/thresholds.ts`.
 
 ## 4. Màu trạng thái của máy
 
@@ -64,14 +68,19 @@ Máy thí sinh gửi trạng thái mỗi 2 giây kèm tình trạng AI:
 
 **Camera có hình chưa có nghĩa AI đang chạy**: giám thị cần nhìn trạng thái AI.
 
-## 6. Gửi cảnh báo và xác nhận
+## 6. Gửi cảnh báo và kết luận của giám thị
 
-- Mỗi cảnh báo có mã riêng. Nếu mất mạng, cảnh báo được xếp hàng trong trình duyệt và gửi lại khi
-  có kết nối (kể cả sau khi tải lại trang). Trung tâm LAN bỏ qua cảnh báo trùng mã, nên gửi lại
-  không làm trùng và không làm mất trạng thái "đã xác minh".
+- Mỗi cảnh báo có mã riêng. Nếu mất mạng, bản chữ được xếp hàng trong trình duyệt và gửi lại khi
+  có kết nối (kể cả sau khi tải lại trang). Clip/ảnh **không** nhét localStorage. Trung tâm LAN bỏ qua
+  cảnh báo trùng mã, nên gửi lại không làm trùng và không làm mất kết luận đã ghi.
 - "Giám thị đã nhận" chỉ hiện sau khi máy giám thị trả lời đã nhận.
+- Giám thị mở chi tiết → **Xác nhận đúng** (`confirmed`) hoặc **Báo nhầm** (`false_alarm`).
+  Thống kê báo nhầm (kể cả theo loại) dùng để chỉnh ngưỡng.
+- Nếu Quản trị bật “Lưu đoạn hình ngắn khi cảnh báo”: clip gắn vào cảnh báo **lúc AI phát cảnh báo**,
+  không phải lúc bấm nút kết luận.
 - Trung tâm LAN giữ tối đa 500 cảnh báo mới nhất, trong bộ nhớ. Đóng EXE máy giáo viên là mất:
-  cần **Xuất báo cáo** (CSV) trước khi kết thúc ca thi.
+  cần **Xuất báo cáo** / **Biên bản đã xác nhận** (CSV gồm cả đúng và báo nhầm đã kết luận) trước khi kết thúc ca thi.
+- Giám thị có thể **xóa máy** khỏi lưới (`DELETE /api/stations/...`) khi máy offline / thử xong; không xóa cảnh báo đã ghi.
 
 ## 7. Nguyên tắc
 

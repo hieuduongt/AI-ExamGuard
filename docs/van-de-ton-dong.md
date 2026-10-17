@@ -15,15 +15,16 @@ nghiệp vụ, hành vi**, chúng được giữ nguyên và ghi lại ở đây
    nhận mọi giá trị (`features/admin/admin-settings.ts`). Ô nhập vẫn giới hạn 1–60 nên chỉ xảy ra khi
    localStorage bị sửa tay.
 
-3. **Ngưỡng chỉ lưu trong trình duyệt của máy quản trị.** Máy thí sinh đọc `examguard:settings:v2` của
-   chính nó, nên chỉnh ngưỡng ở máy giáo viên không tự áp dụng cho các máy học sinh.
+3. ~~**Ngưỡng chỉ lưu trong trình duyệt của máy quản trị.**~~ — **đã sửa**: Quản trị **Lưu thay đổi** đẩy
+   `thresholds` + quyền riêng tư lên hub (`POST /api/settings`); máy thí sinh đọc lại khi bắt đầu và đang chạy.
 
 4. ~~**`head_pose` dùng chung ngưỡng với quay đầu**~~ — **đã sửa**: thêm `headPoseSeconds` (mặc định 6 giây), chỉnh riêng ở trang Quản trị.
 
 5. **`normalizeHubUrl('http://')` trả về `http://http:8765`** thay vì chuỗi rỗng (đã ghi trong
    `web/tests/unit/hub-url.test.cjs`). Chỉ xảy ra khi người dùng gõ đúng `http://`; kiểm tra kết nối sẽ báo lỗi.
 
-6. **`PATCH /api/events/{id}` không có thân hợp lệ được hiểu là "đã xác minh"** (xem `docs/ky-thuat/api-lan.md`).
+6. **`PATCH /api/events/{id}` không có thân hợp lệ được hiểu là `reviewed = true`** (không đặt `verdict`;
+   xem `docs/ky-thuat/api-lan.md`).
 
 7. **Máy chủ LAN đôi khi ngắt kết nối khi tải trang lần đầu.** Kiểm thử e2e trên macOS thấy khoảng 1/3 lần
    một file JS bị `ERR_CONNECTION_RESET` (cả bản trước và sau quy hoạch). Nghi do hàng đợi kết nối mặc định
@@ -37,10 +38,11 @@ nghiệp vụ, hành vi**, chúng được giữ nguyên và ghi lại ở đây
 
 ## Tài liệu và công cụ
 
-8. **Các script trong `docs/tools/`** chứa nội dung câu lệnh lịch sử (nhắc `lib/…`, `app_desktop.py` một file,
-   `AI_ExamGuard_Portable.spec`) và ghi đầu ra vào thư mục cũ (`tai-lieu/`, `DU_AN_PYTHON/…`). Các file docx trong
-   `tai-lieu-du-thi/` đã được chỉnh tay sau khi sinh (ví dụ bản "32 câu lệnh" có thêm phần ChatGPT và hình ảnh),
-   nên **không chạy lại script để đè lên**. Muốn biết code của từng bước nằm đâu: `ky-thuat/doi-chieu-32-buoc.md`.
+8. **Script lịch sử trong `docs/tools/`** (`build_ho_so_du_an.py`, `build_32_cau_lenh.py`, `build_huong_dan_codex.py`…)
+   chứa câu lệnh cũ và có thể ghi vào thư mục cũ — **không chạy lại để đè** hồ sơ đã chỉnh tay.
+   Các script tài liệu vấn đáp **được chạy lại khi code đổi**: `build_mo_ta_tinh_nang.py`,
+   `build_tai_lieu_cai_tien.py`, `build_tai_lieu_hoc_sinh.py` (+ `so_do_tai_lieu_hoc_sinh.py`).
+   Muốn biết code của từng bước 32 câu lệnh nằm đâu: `ky-thuat/doi-chieu-32-buoc.md`.
 
 9. **Hồ sơ dự thi chưa thống nhất công cụ AI**: hồ sơ dự án ghi "Kiro", tài liệu 32 câu lệnh ghi "ChatGPT" (tạo câu lệnh)
    và "Codex" (thực hiện) — cần thống nhất trước khi nộp.

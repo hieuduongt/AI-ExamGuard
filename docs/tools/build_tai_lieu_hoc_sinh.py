@@ -427,7 +427,7 @@ def part1(w):
     w.steps([
         "Webcam của từng máy thi nhìn khuôn mặt thí sinh. AI chạy **ngay trên máy đó** đo xem: có mấy khuôn mặt, đầu đang quay bao nhiêu độ, mắt có nhìn ra ngoài màn hình không.",
         "Nếu một dấu hiệu **kéo dài đủ lâu** (ví dụ quay đầu liên tục hơn 3 giây), máy thi gửi một **cảnh báo** qua mạng nội bộ (LAN) tới máy giám thị.",
-        "Máy giám thị tô máy đó màu vàng hoặc đỏ, kêu tiếng “bíp” và ghi rõ: phòng nào, máy số mấy, bạn nào, chuyện gì, lúc mấy giờ.",
+        "Máy giám thị tô máy đó màu vàng hoặc đỏ, hiện dải đỏ “cảnh báo mới” và ghi rõ: phòng nào, máy số mấy, bạn nào, chuyện gì, lúc mấy giờ.",
         "**Giám thị đi tới xem tận nơi và tự quyết định.** AI không bao giờ tự kết luận ai gian lận.",
     ])
     w.callout("nho", "Nguyên tắc của cả dự án gói trong 4 bước: **Quan sát tín hiệu → Kiểm tra thời gian → Tạo cảnh báo → Con người xác minh.**")
@@ -457,7 +457,7 @@ def part2(w, figs):
     w.table(["Trang", "Địa chỉ", "Ai dùng", "Làm được gì"], [
         ["Trang chủ", "`/`", "Mọi người", "Giới thiệu, nút vào phòng thí sinh hoặc giám thị."],
         ["Thí sinh", "`/thi-sinh`", "Học sinh", "Nhập họ tên, số báo danh, phòng, số máy → gõ mã kết nối 4 số → đồng ý giám sát → bật webcam. Xem AI đang đếm gì."],
-        ["Giám thị", "`/giam-thi`", "Giáo viên", "Xem mã kết nối, sơ đồ máy xanh/vàng/đỏ/xám, danh sách cảnh báo có tiếng bíp, xem chi tiết, bấm “Đã xác minh”, xuất báo cáo CSV."],
+        ["Giám thị", "`/giam-thi`", "Giáo viên", "Xem mã kết nối, sơ đồ máy xanh/vàng/đỏ/xám, danh sách cảnh báo (dải đỏ), xem chi tiết / đoạn hình, bấm Xác nhận đúng hoặc Báo nhầm, xuất CSV / biên bản."],
         ["Quản trị", "`/quan-tri`", "Nhà trường", "Đặt tên phòng, chỉnh các ngưỡng thời gian (1–60 giây), xuất cấu hình JSON."],
     ], [2.4, 2.4, 2.4, 9.4])
     w.h2("2.1. Một ca thi diễn ra thế nào?")
@@ -1087,7 +1087,7 @@ python3 run_hub.py                     # bật trung tâm LAN ở cổng 8765
     w.steps([
         "Mở Chrome vào `http://localhost:8765/thi-sinh`. Ô **Địa chỉ máy giám thị** nhập `localhost:8765` → **Kiểm tra kết nối** → điền thông tin → **Kiểm tra webcam và bắt đầu**.",
         "Mở `http://localhost:8765/giam-thi` ở **một cửa sổ Chrome riêng** (không phải tab mới, vì chuyển tab bị tính là “rời màn hình thi”).",
-        "Rời khỏi webcam khoảng 5 giây → màn hình giám thị nhận cảnh báo “Không có mặt trước máy” kèm tiếng báo động.",
+        "Rời khỏi webcam khoảng 5 giây → màn hình giám thị nhận cảnh báo “Không có mặt trước máy” (dải đỏ, không tiếng bíp).",
     ])
     w.h2("10.2. Bài tập thực hành")
     w.callout("tay", [
@@ -1273,7 +1273,7 @@ def part13(w):
              "Mỗi lần dưới ngưỡng 3 giây nên chưa có cảnh báo. Đây là hạn chế em đã biết. Nhưng trang giám thị vẫn hiện **tiến trình bộ đếm** của từng máy, "
              "và giám thị vẫn đi lại trong phòng. Hướng cải tiến là đếm **số lần liếc lặp lại** trong một khoảng thời gian.", None),
             ("Hai bạn ngồi sát nhau, camera thấy cả mặt bạn bên cạnh thì sao?",
-             "Sẽ báo “nhiều khuôn mặt”. Cần bố trí webcam và chỗ ngồi hợp lý; còn nếu vẫn báo thì giám thị tới xem và đánh dấu đã xác minh.", None),
+             "Sẽ báo “nhiều khuôn mặt”. Cần bố trí webcam và chỗ ngồi hợp lý; còn nếu vẫn báo thì giám thị tới xem và bấm Xác nhận đúng hoặc Báo nhầm.", None),
             ("Sao không dùng máy chủ trên Internet (đám mây)?",
              "Dự án có hỗ trợ Firebase làm tùy chọn, nhưng chọn LAN làm chính vì phòng thi thường không có Internet, dữ liệu không ra khỏi trường, và không tốn chi phí máy chủ.", None),
             ("Em đã dùng công cụ AI để làm dự án như thế nào?",
@@ -1311,7 +1311,7 @@ def part14(w):
         "Tự vẽ lại được sơ đồ toàn cảnh (Hình 1) và dây chuyền 6 bước (Hình 3) ra giấy, không cần nhìn.",
         "Thuộc bảng **những con số** ở phần 11.",
         "Mở đúng file khi được hỏi “phần này nằm ở đâu?” (bảng mục 4.2).",
-        "Chạy thử được demo: thí sinh rời webcam 5 giây → giám thị nhận cảnh báo và có tiếng bíp.",
+        "Chạy thử được demo: thí sinh rời webcam 5 giây → giám thị nhận cảnh báo (dải đỏ) và bấm được kết luận.",
         "Có phương án dự phòng: video quay sẵn màn hình demo, trường hợp phòng thi không có webcam hoặc mạng.",
         "Đã thống nhất với thầy cô tên công cụ AI ghi trong hồ sơ.",
         "Biết trả lời “em chưa đo / chưa làm, hướng phát triển là…” cho các câu về độ chính xác và bảo mật.",

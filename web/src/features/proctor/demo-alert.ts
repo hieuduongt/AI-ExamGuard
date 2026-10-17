@@ -6,7 +6,7 @@ import { demoStations, makeId } from '@/services/exam-sync';
 
 /**
  * Đây là gì: hàm tạo một cảnh báo mẫu.
- * Mục tiêu: phục vụ nút "Tạo cảnh báo thử" để kiểm tra âm thanh, dải báo mới, bảng chi tiết.
+ * Mục tiêu: phục vụ nút "Tạo cảnh báo thử" để kiểm tra dải báo mới, bảng chi tiết, đường truyền.
  * Chức năng: chọn lần lượt từng máy đang có (nếu chưa có máy nào thì lấy máy mẫu đầu tiên);
  *   luân phiên giữa cảnh báo đỏ "nhiều khuôn mặt" và cảnh báo vàng "quay đầu".
  * Đầu ra: một cảnh báo (ExamEvent) mới, chưa xem, có nguồn là "demo".

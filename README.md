@@ -11,18 +11,18 @@ AI ExamGuard giống như **một "trợ lý quan sát" ngồi sau mỗi webcam*
 
 1. Webcam của từng máy thi nhìn khuôn mặt thí sinh. AI trên **chính máy đó** đo: có mấy khuôn mặt,
    đầu đang quay bao nhiêu độ, mắt có nhìn ra ngoài màn hình không.
-2. Nếu một dấu hiệu **kéo dài đủ lâu** (ví dụ quay đầu hơn 3 giây), máy thi gửi một **cảnh báo** qua mạng
+2. Nếu một dấu hiệu **kéo dài đủ lâu** (ví dụ quay đầu hơn 3 giây, cúi/ngẩng hơn 6 giây), máy thi gửi một **cảnh báo** qua mạng
    nội bộ (LAN) tới máy của giám thị.
-3. Máy giám thị hiện máy đó màu vàng/đỏ, kêu tiếng "bíp" và ghi rõ: phòng nào, máy số mấy, bạn nào,
-   chuyện gì, lúc mấy giờ.
-4. **Giám thị đi tới xem tận nơi và tự quyết định.** AI không bao giờ tự kết luận ai gian lận.
+3. Máy giám thị hiện máy đó màu vàng/đỏ, dải đỏ “cảnh báo mới”, ghi rõ: phòng nào, máy số mấy, bạn nào,
+   chuyện gì, lúc mấy giờ. (Tuỳ chọn: xem đoạn hình ngắn quanh lúc xảy ra.)
+4. **Giám thị đi tới xem tận nơi và tự quyết định** bằng nút **Xác nhận đúng** hoặc **Báo nhầm**. AI không bao giờ tự kết luận ai gian lận.
 
-Nguyên tắc cả dự án: *Quan sát tín hiệu → Kiểm tra thời gian → Tạo cảnh báo → Con người xác minh.*
+Nguyên tắc cả dự án: *Quan sát tín hiệu → Kiểm tra thời gian → Tạo cảnh báo → Con người kết luận.*
 
 Ba điều quan trọng:
 
-- **Không gửi video đi đâu cả.** Hình ảnh chỉ được phân tích ngay trên máy thi; thứ gửi đi chỉ là vài con số
-  và các cảnh báo.
+- **Không gửi video liên tục.** Hình ảnh được phân tích ngay trên máy thi; thứ gửi đi là vài con số,
+  cảnh báo, và (chỉ khi nhà trường bật) đoạn hình ngắn kèm cảnh báo.
 - **Không cần Internet.** Chỉ cần các máy cắm chung mạng LAN hoặc chung Wi-Fi.
 - **Một file EXE duy nhất** dùng cho cả máy giáo viên lẫn máy học sinh (Windows 10/11).
 
@@ -40,6 +40,8 @@ Phiên bản hiện tại: `2026.09.08.3`.
 | Lập trình viên sửa ứng dụng Windows / máy chủ LAN | [desktop-hub/README.md](desktop-hub/README.md) |
 | Lập trình viên đổi giá trị dùng chung (cổng, phiên bản…) | [shared/README.md](shared/README.md) |
 | Chạy thử, kiểm thử, build EXE | [docs/van-hanh/chay-va-build.md](docs/van-hanh/chay-va-build.md) |
+| Học sinh ôn vấn đáp (cả dự án) | [docs/tai-lieu-du-thi/AI_ExamGuard_Mo_ta_tinh_nang_vai_tro_va_cong_nghe.docx](docs/tai-lieu-du-thi/AI_ExamGuard_Mo_ta_tinh_nang_vai_tro_va_cong_nghe.docx) |
+| Học sinh ôn vấn đáp phần cải tiến | [docs/tai-lieu-du-thi/AI_ExamGuard_Tai_lieu_phan_cai_tien_theo_gop_y.docx](docs/tai-lieu-du-thi/AI_ExamGuard_Tai_lieu_phan_cai_tien_theo_gop_y.docx) |
 | Ban giám khảo | [docs/tai-lieu-du-thi/](docs/tai-lieu-du-thi/) và [docs/ky-thuat/doi-chieu-32-buoc.md](docs/ky-thuat/doi-chieu-32-buoc.md) |
 
 Mục lục toàn bộ tài liệu: [docs/README.md](docs/README.md).
@@ -54,7 +56,7 @@ còn `shared/` là bản thực đơn chung mà cả hai bên phải đọc gi�
 DUANDUNGAI/
 ├── web/          Giao diện 4 trang + AI nhận diện khuôn mặt (TypeScript, Next.js)
 ├── desktop-hub/  Ứng dụng Windows (Python): máy chủ "trung tâm cảnh báo LAN" + cửa sổ ứng dụng
-├── shared/       "Hợp đồng" chung giữa hai phần: cổng mạng, phiên bản, loại cảnh báo, danh sách API
+├── shared/       "Hợp đồng" chung giữa hai phần: cổng mạng, phiên bản, loại cảnh báo, API, verdict
 ├── docs/         Tài liệu: tổng quan, quy tắc cảnh báo, API, hướng dẫn vận hành, hồ sơ dự thi
 ├── scripts/      build-exe.ps1: một lệnh build ra file EXE (Windows)
 └── release/      Các file EXE đã build (không đưa lên Git)
@@ -85,9 +87,9 @@ lấy từ chính máy chủ đó.
                                                  3. Đồng ý giám sát → bật webcam → AI chạy
                                                  4. Mỗi 2 giây: gửi "tôi vẫn ổn" (nhịp tim)
  5. Sơ đồ máy: xanh / vàng / đỏ / mất kết nối  ◀─── Khi có dấu hiệu kéo dài: gửi cảnh báo
-    Có cảnh báo: kêu tiếng + dải đỏ
- 6. Giám thị xem tận nơi → "Đánh dấu đã xác minh"
- 7. Cuối ca: "Xuất báo cáo" (CSV)
+    Có cảnh báo: dải đỏ (+ đoạn hình nếu đã bật)
+ 6. Giám thị xem tận nơi → "Xác nhận đúng" hoặc "Báo nhầm"
+ 7. Cuối ca: "Xuất báo cáo" / "Biên bản đã xác nhận" (CSV)
 ```
 
 Nếu mạng Wi-Fi chặn việc tự tìm, học sinh gõ địa chỉ `http://192.168.1.10:8765` thay cho mã.
@@ -106,7 +108,16 @@ python3 run_hub.py                     # bật trung tâm LAN ở cổng 8765 (m
    → **Kiểm tra kết nối** → điền thông tin → **Kiểm tra webcam và bắt đầu**.
 2. Mở `http://localhost:8765/giam-thi` ở **một cửa sổ Chrome riêng** (không phải tab mới; chuyển tab trên
    cửa sổ thí sinh bị tính là "rời màn hình thi").
-3. Rời khỏi webcam khoảng 5 giây → giám thị nhận cảnh báo "Không có mặt trước máy" kèm tiếng báo động.
+3. Rời khỏi webcam khoảng 5 giây → giám thị nhận cảnh báo "Không có mặt trước máy" (dải đỏ, không tiếng bíp).
+
+Khi đang sửa code web và cần webcam trên máy khác trong LAN:
+
+```bash
+# Terminal 1
+cd desktop-hub && python3 run_hub.py
+# Terminal 2
+cd web && npm run certs:dev && npm run dev:https   # https://<IP-LAN>:3000
+```
 
 Trên Windows, mở đúng cửa sổ ứng dụng như bản EXE: `pip install -r requirements.txt && python app_desktop.py`.
 Build EXE (PowerShell, từ thư mục gốc): `powershell -ExecutionPolicy Bypass -File scripts/build-exe.ps1`.
@@ -125,12 +136,12 @@ Build EXE (PowerShell, từ thư mục gốc): `powershell -ExecutionPolicy Bypa
 ## Nguyên tắc an toàn và giới hạn
 
 - AI chỉ hỗ trợ quan sát, **không tự kết luận vi phạm**. Thí sinh phải đồng ý trước khi webcam bật; không thu âm.
-- Video không rời khỏi máy thi; lưu ảnh cảnh báo mặc định tắt.
+- Video không gửi liên tục; lưu đoạn hình ngắn khi cảnh báo **mặc định tắt** (bật ở Quản trị → Lưu lên hub).
 - Danh tính (họ tên, SBD, phòng, máy) do thí sinh tự khai để giám thị đối chiếu; **không nhận diện người bằng khuôn mặt**.
 - Góc quay đầu, cúi/ngẩng, hướng mắt chỉ là **ước tính**; phụ thuộc webcam, ánh sáng, tư thế ngồi.
   Phần mềm **không nhận diện điện thoại**; cúi đầu lâu có thể chỉ là đang viết nháp.
 - Bản LAN dành cho mạng nội bộ tin cậy, chưa có đăng nhập. Không mở cổng `8765`/`8766` ra Internet.
   Mã kết nối 4 số chỉ để phân biệt các máy giám thị, **không phải mật khẩu**.
-- Dữ liệu ca thi nằm trong bộ nhớ máy giáo viên: đóng EXE là mất, hãy **Xuất báo cáo** trước.
+- Dữ liệu ca thi nằm trong bộ nhớ máy giáo viên: đóng EXE là mất, hãy **Xuất báo cáo / biên bản** trước.
 - Ngưỡng hiện tại dùng để trình diễn; cần hiệu chỉnh và thử với nhiều máy trước khi dùng thật.
   Các vấn đề đã biết: [docs/van-de-ton-dong.md](docs/van-de-ton-dong.md).

@@ -55,11 +55,21 @@ Thử **mã kết nối** trên một máy: bật thêm trung tâm thứ hai `EX
 
 ```bash
 cd desktop-hub && python3 run_hub.py    # cửa sổ terminal 1, giữ chạy
-cd web && npm run dev                   # cửa sổ terminal 2
+cd web && npm run dev                   # cửa sổ terminal 2 → http://localhost:3000
 ```
 
 Mở `http://localhost:3000/thi-sinh`, nhập địa chỉ máy giám thị `http://localhost:8765`, rồi làm tiếp như
 cách A. Bảng giám thị mở `http://localhost:3000/giam-thi` cùng trình duyệt (địa chỉ hub đã được ghi nhớ).
+
+**Cách C, webcam trên máy khác trong LAN** (trình duyệt chặn webcam trên `http://` IP):
+
+```bash
+cd desktop-hub && python3 run_hub.py
+cd web && npm run certs:dev && npm run dev:https   # https://<IP-LAN>:3000 ; /api proxy → :8765
+```
+
+Máy khác mở `https://<IP>:3000/thi-sinh` → Advanced → Proceed (cert tự ký). Đổi Wi‑Fi/IP thì chạy lại
+`npm run certs:dev`. Hub vẫn ở `http://<IP>:8765` (hoặc nhập địa chỉ hub tương ứng).
 
 Không làm được trên macOS: mở cửa sổ ứng dụng `app_desktop.py` (cần Edge WebView2) và build EXE.
 
