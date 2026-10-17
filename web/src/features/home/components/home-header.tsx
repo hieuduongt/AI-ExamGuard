@@ -1,28 +1,11 @@
-/**
- * File này vẽ thanh tiêu đề trên cùng của trang chủ (logo AI ExamGuard và menu).
- * Chỉ dùng cho trang chủ; các màn hình khác dùng web/src/components/layout/examguard-header.tsx.
- */
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
-
-/**
- * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình)
- *   thanh tiêu đề của trang chủ.
- * Mục tiêu: cho người dùng thấy tên sản phẩm và nhảy nhanh tới các phần quan trọng.
- * Chức năng: hiện logo (bấm để về trang chủ); trên màn hình rộng hiện thêm menu nhảy tới
- *   mục "Tính năng", "Quyền riêng tư" và nút vào màn hình giám thị "/giam-thi".
- * Đầu ra: giao diện thanh tiêu đề.
- * Dùng ở đâu: HomeScreen (web/src/features/home/home-screen.tsx).
- * Liên kết với: mục id="tinh-nang" trong feature-highlights.tsx và id="quyen-rieng-tu"
- *   trong privacy-banner.tsx (phải trùng tên để menu nhảy đúng chỗ).
- */
 export function HomeHeader() {
-  return (
-    <header className="relative z-20 border-b border-white/8 bg-[#07162d]/92 text-white backdrop-blur-xl">
+    return (<header className="relative z-20 border-b border-white/8 bg-[#07162d]/92 text-white backdrop-blur-xl">
       <div className="mx-auto flex h-18 w-[min(1180px,calc(100%-32px))] items-center justify-between">
         <Link href="/" className="flex items-center gap-3" aria-label="AI ExamGuard - Trang chủ">
           <span className="grid size-10 place-items-center rounded-[14px] bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_8px_24px_rgba(20,135,255,.35)]">
-            <ShieldCheck className="size-5" />
+            <ShieldCheck className="size-5"/>
           </span>
           <span className="leading-none">
             <strong className="block text-[15px] font-black tracking-[.08em]">AI EXAMGUARD</strong>
@@ -35,6 +18,5 @@ export function HomeHeader() {
           <Link href="/giam-thi" className="rounded-xl border border-white/12 bg-white/8 px-4 py-2.5 text-white transition hover:bg-white/14">Vào phòng giám thị</Link>
         </nav>
       </div>
-    </header>
-  );
+    </header>);
 }
