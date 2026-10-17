@@ -65,15 +65,16 @@ def part0(w):
     w.steps([
         "Đọc mục 1 (bản đồ 4 góp ý) — nắm toàn cục khoảng 5 phút.",
         "Đọc mục 2 (hai tầng NHÌN / QUYẾT ĐỊNH) — “xương sống” trả lời mọi câu khó về AI.",
-        "Đọc lần lượt mục 3 → 6 → 7 → 8 (từng cải tiến + gỡ âm thanh + đường dự phòng). **Không bỏ mục nào.**",
-        "Đọc mục 9 (bản đồ file) + mục 11 (câu hỏi khó) — mỗi bạn luyện nói to **cùng một bộ câu hỏi**.",
-        "Chạy thử demo mục 10 trên máy thật ít nhất một lần, để ai cũng biết thao tác.",
+        "Đọc lần lượt mục 3 → 8 (từng cải tiến + vận hành sau triển khai + gỡ âm thanh + đường dự phòng). **Không bỏ mục nào.**",
+        "Đọc mục 10 (bản đồ file) + mục 12 (câu hỏi khó) — mỗi bạn luyện nói to **cùng một bộ câu hỏi**.",
+        "Chạy thử demo mục 11 trên máy thật ít nhất một lần, để ai cũng biết thao tác.",
     ])
     w.h2("Những gì mỗi bạn phải nói được (không phân công)")
     w.table(["Chủ đề", "Phải hiểu / nói được", "Bằng chứng / thao tác demo"], [
         ["Báo nhầm", "Vì sao có hai nút; đếm theo loại để chỉnh ngưỡng; lưu ở hub.", "Bấm Báo nhầm → thẻ số tăng; CSV có cột Kết luận."],
         ["Thử nghiệm + ngưỡng", "Cúi/ngẩng 6 giây vs quay đầu 3 giây; quy trình đếm đúng/nhầm/sót; chỉnh rồi thử lại.", "Kịch bản + bảng số lần 1 / lần 2; ô Quản trị."],
-        ["Đoạn hình + biên bản", "Clip tạo lúc AI cảnh báo (không lúc bấm xác nhận); RAM; mặc định tắt; biên bản chỉ confirmed.", "Play clip / lưới ảnh; nút Biên bản đã xác nhận."],
+        ["Đoạn hình + biên bản", "Clip tạo lúc AI cảnh báo (không lúc bấm xác nhận); RAM; mặc định tắt; biên bản gồm cả Xác nhận đúng và Báo nhầm.", "Play clip / lưới ảnh; nút Biên bản đã xác nhận."],
+        ["Đồng bộ ngưỡng + xóa máy", "Quản trị Lưu → máy thí sinh nhận ngưỡng mới; giám thị có nút xóa máy offline khỏi lưới.", "Chỉnh 2→5 giây thấy thanh tiến trình đổi; bấm thùng rác trên ô máy."],
         ["Buổi thử thầy cô", "Nghe người dùng thật; phiếu; 1–2 sửa theo góp ý.", "Ảnh / phiếu / bảng tiếp thu."],
         ["Bản chất AI", "MediaPipe chỉ nhìn; BehaviorEngine đếm; giám thị quyết định; future-custom là ổ cắm trống.", "Giải thích bằng ví von + nhắc tên file nếu được hỏi."],
     ], [3.2, 7.2, 6.2], size=9)
@@ -85,7 +86,7 @@ def part1(w):
     w.table(["#", "Giám khảo muốn (ý chính)", "Nhóm đáp lại trong sản phẩm", "Bằng chứng khi vấn đáp"], [
         ["1", "AI không đúng 100%. Báo nhầm nguy hiểm hơn bỏ sót. Cần nút **Báo nhầm**, đếm để chỉnh thời gian chờ.", "Hai nút **Xác nhận đúng** / **Báo nhầm**; đếm tổng + theo loại; CSV có cột Kết luận.", "Ảnh màn hình thẻ Báo nhầm; bấm thử một cảnh báo."],
         ["2", "Thử có hệ thống ~15 phút theo kịch bản; đếm đúng/nhầm/sót; chỉnh ngưỡng rồi chạy lại; thử thiếu sáng/kính/lệch camera.", "Tách ngưỡng cúi/ngẩng (mặc định 6 giây); ô chỉnh riêng ở Quản trị; quy trình thử + bảng số liệu.", "Kịch bản + bảng trước/sau; video quay quá trình thử/chỉnh."],
-        ["3", "Cảnh báo chỉ có chữ thì muộn. Cần **đoạn hình ngắn** quanh lúc xảy ra + biên bản chỉ lần đã xác nhận.", "Clip ~5 giây (hoặc lưới ảnh dự phòng) khi bật công tắc; nút **Biên bản đã xác nhận**.", "Mở chi tiết → nút Xem đoạn hình; xuất biên bản mẫu."],
+        ["3", "Cảnh báo chỉ có chữ thì muộn. Cần **đoạn hình ngắn** quanh lúc xảy ra + biên bản các lần đã kết luận.", "Clip ~5 giây (hoặc lưới ảnh dự phòng) khi bật công tắc; nút **Biên bản đã xác nhận** (gồm đúng + báo nhầm).", "Mở chi tiết → nút Xem đoạn hình; xuất biên bản mẫu."],
         ["4", "Thử buổi thật với thầy cô làm giám thị, hỏi ý kiến để cải UI giám thị.", "Không phải sửa lõi AI; là tổ chức buổi thử + phiếu + 1–2 sửa dễ.", "Ảnh buổi thử; phiếu; danh sách đã sửa theo ý thầy cô."],
     ], [0.7, 4.5, 5.5, 5.9], size=9)
     w.callout("canh", [
@@ -151,8 +152,8 @@ def part3(w):
         ["`web/src/features/proctor/components/event-detail-drawer.tsx`", "Hai nút Xác nhận đúng / Báo nhầm; chỗ xem clip/ảnh.", "Đây là nơi giám thị thao tác sau khi đọc chi tiết — đúng chỗ “sau khi kiểm tra” mà giám khảo yêu cầu."],
         ["`web/src/features/proctor/components/stat-cards.tsx`", "Thẻ số Báo nhầm + dòng “Báo nhầm theo loại”.", "Đếm để chỉnh ngưỡng phải **nhìn thấy ngay**, không bắt mở Excel mới biết."],
         ["`web/src/features/proctor/event-filters.ts`", "Hàm đếm false_alarm / theo loại.", "Tách logic đếm khỏi giao diện — dễ kiểm thử, ít lỗi."],
-        ["`web/src/features/proctor/csv-export.ts`", "Cột Kết luận; hàm biên bản chỉ `confirmed`.", "Xuất báo cáo / biên bản dùng chung một cách ghi chữ tiếng Việt."],
-        ["`web/src/features/proctor/proctor-screen.tsx`", "Nối nút → markEventReviewed; nút xuất biên bản.", "Màn hình tổng: không nhét logic sâu vào đây, chỉ “bấm nút gọi việc đã có”."],
+        ["`web/src/features/proctor/csv-export.ts`", "Cột Kết luận; biên bản gồm `confirmed` và `false_alarm`.", "Xuất báo cáo / biên bản dùng chung một cách ghi chữ tiếng Việt."],
+        ["`web/src/features/proctor/proctor-screen.tsx`", "Nối nút → markEventReviewed; nút xuất biên bản; xóa máy.", "Màn hình tổng: không nhét logic sâu vào đây, chỉ “bấm nút gọi việc đã có”."],
         ["Các file test: `web/tests/unit/proctor.test.cjs`, `contract.test.cjs`, `desktop-hub/tests/test_hub_api.py`, `test_contract.py`", "Khóa chặt: verdict lạ bị từ chối; CSV có cột Kết luận; hợp đồng khớp.", "Tránh cải tiến hôm nay làm hỏng ngầm ngày mai."],
     ], [4.4, 4.8, 7.4], size=8)
     w.h2("3.5. Vì sao không chỉ sửa giao diện?")
@@ -195,8 +196,11 @@ def part4(w):
         ["`web/src/domain/thresholds.ts`", "Mặc định cúi/ngẩng = 6; hàm đọc/cất ngưỡng đã lưu.", "Số mặc định và cách đọc cấu hình nằm một chỗ."],
         ["`web/src/domain/behavior-engine.ts`", "Loại `head_pose` dùng `headPoseSeconds` (không còn dùng nhầm `headTurnSeconds`).", "Đây mới là chỗ **đếm giây**. Sửa UI mà không sửa đây = nút giả."],
         ["`web/src/features/admin/components/threshold-settings-card.tsx`", "Ô chỉnh riêng trên Quản trị.", "Người vận hành chỉnh được không cần mở code."],
+        ["`web/src/features/admin/admin-screen.tsx` + `hub-settings.ts`", "Bấm **Lưu thay đổi** → đẩy **cả ngưỡng** lên hub `/api/settings`.", "Trước chỉ lưu trên trình duyệt Quản trị → máy thí sinh khác không đổi. Giờ cả phòng dùng chung."],
+        ["`use-monitoring-session.ts`", "Khi bắt đầu phiên và mỗi ~2 giây: đọc ngưỡng từ hub (ưu tiên) hoặc local.", "Đang thi vẫn cập nhật thanh “x / N giây” khi quản trị vừa lưu."],
         ["`web/tests/unit/domain.test.cjs`", "Khóa mặc định mới + hành vi đếm.", "Tránh ai đó đổi nhầm về 3 giây mà không biết."],
     ], [4.6, 5.2, 6.8], size=9)
+    w.callout("canh", "Muốn máy thí sinh nhận ngưỡng mới: Quản trị phải bấm **Lưu thay đổi** (không chỉ gõ số rồi thôi). Hub phải đang chạy.")
     w.h2("4.4. Vì sao không “học máy” tự chỉnh ngưỡng?")
     w.bullets([
         "Dự án THCS cần **giải thích được** và **kiểm soát được**.",
@@ -218,27 +222,30 @@ def part5(w):
     w.h1("5. Cải tiến 3 — Đoạn hình ngắn + biên bản đã xác nhận", new_page=True)
     w.h2("5.1. Vấn đề")
     w.p("Cảnh báo chỉ có chữ và thời điểm → khi giám thị tới nơi, việc thường **đã xong**. "
-        "Cần xem lại vài giây trước và trong lúc xảy ra. Cuối buổi cần bản tổng kết **chỉ những lần người đã xác nhận**.")
+        "Cần xem lại vài giây trước và trong lúc xảy ra. Cuối buổi cần bản tổng kết các lần "
+        "**giám thị đã kết luận** (đúng hoặc báo nhầm), không lẫn cảnh báo chưa kiểm tra.")
     w.h2("5.2. Clip được tạo khi nào? Lưu ở đâu?")
     w.callout("canh", [
-        "Clip **không** được tạo lúc bấm “Xác nhận đúng”.",
+        "Clip **không** được tạo lúc bấm “Xác nhận đúng” hay “Báo nhầm”.",
         "Clip gắn vào cảnh báo **ngay khi AI phát cảnh báo** (nếu công tắc lưu đang bật).",
-        "Nút xác nhận chỉ gắn nhãn đúng/nhầm lên cảnh báo đã có.",
+        "Hai nút kết luận chỉ gắn nhãn đúng/nhầm lên cảnh báo đã có.",
     ])
     w.bullets([
         "**Nơi lưu:** trong **bộ nhớ RAM** của máy giám thị (hub), nằm trong dữ liệu cảnh báo (`clip` hoặc `snapshots`).",
         "**Không** tự lưu file vào ổ đĩa kiểu thư mục `Videos/`.",
         "**Đóng EXE / tắt hub → mất.** Đó là chủ đích quyền riêng tư.",
         "**Biên bản CSV** chỉ là chữ — **không nhét video vào Excel**.",
+        "**Không nhét clip vào localStorage** máy thí sinh (dễ đầy bộ nhớ → hỏng cả lần gửi cảnh báo).",
     ])
     w.h2("5.3. Cách dùng (học thuộc thao tác)")
     w.steps([
         "Mở `/quan-tri` → bật **“Lưu đoạn hình ngắn khi cảnh báo”** → **Lưu thay đổi** (đẩy lên hub).",
-        "Trên máy thí sinh: **bắt đầu lại phiên** (công tắc được đọc lúc bắt đầu).",
+        "Trên máy thí sinh: **bắt đầu lại phiên** (công tắc được đọc lúc bắt đầu / đang chạy).",
         "Khi có cảnh báo AI → đợi khoảng 2 giây (để ghi phần “trong lúc xảy ra”).",
         "`/giam-thi` → mở chi tiết → nút **“Xem lại đoạn hình ngắn”** (hoặc lưới ảnh dự phòng).",
         "Tới nơi kiểm tra → bấm Xác nhận đúng / Báo nhầm.",
-        "Cuối buổi → **Biên bản đã xác nhận** (chỉ các lần `confirmed`).",
+        "Cuối buổi → **Biên bản đã xác nhận**: gồm cả **Xác nhận đúng** và **Báo nhầm** "
+        "(cột Kết luận phân biệt); **không** gồm cảnh báo chưa bấm nút.",
     ])
     w.h2("5.4. File nào? Vì sao?")
     w.table(["Đường dẫn", "Việc làm", "Vì sao ở đây / không ở chỗ khác"], [
@@ -246,12 +253,12 @@ def part5(w):
         ["`web/src/features/candidate/hooks/use-monitoring-session.ts`", "Bật recorder khi công tắc bật; khi emit cảnh báo AI thì chốt clip; gửi kèm sự kiện.", "Đây là “bộ não phiên thí sinh” — chỉ chỗ này thấy webcam thật để ghi."],
         ["`web/src/domain/exam-types.ts`", "Trường `clip?`, `snapshots?` trên cảnh báo.", "Cùng từ điển dữ liệu với verdict."],
         ["`web/src/features/admin/components/privacy-settings-card.tsx`", "Công tắc lưu đoạn hình (mặc định tắt).", "Quyền riêng tư phải do nhà trường bật có chủ đích."],
-        ["`web/src/features/admin/admin-screen.tsx` + `web/src/services/hub/hub-settings.ts`", "Lưu local + **đẩy công tắc lên hub** `/api/settings`.", "Trước đây chỉ lưu trên máy mở Quản trị → máy thí sinh khác không biết. Đẩy lên hub để cả phòng dùng chung."],
+        ["`web/src/features/admin/admin-screen.tsx` + `hub-settings.ts`", "Lưu local + **đẩy công tắc + ngưỡng** lên hub `/api/settings`.", "Máy thí sinh khác trong phòng đọc cùng một cấu hình."],
         ["`desktop-hub/.../exam_store.py` + `http_handler.py`", "GET/POST `/api/settings`; lưu sự kiện kèm `clip`.", "Hub là trung tâm LAN; settings + events phải ở đây."],
-        ["`web/src/services/exam-sync.ts`", "Cảnh báo có clip gửi **thẳng** hub (không nhét localStorage).", "Clip lớn dễ vượt hạn mức localStorage của hộp thư đi → mất media mà vẫn tưởng đã gửi."],
+        ["`web/src/services/exam-sync.ts` + `outbox.ts`", "Clip gửi thẳng hub; bản chữ xếp hộp thư đi; không nhét media vào localStorage.", "Tránh đầy ổ nhớ trình duyệt làm mất cả cảnh báo chữ."],
         ["`web/src/features/proctor/components/event-detail-drawer.tsx`", "Nút xem clip / lưới ảnh; thông báo nếu không có media.", "Giám thị xem lại đúng chỗ đang kết luận."],
         ["`web/src/features/proctor/components/event-feed.tsx`", "Badge “Có đoạn hình” / “Có ảnh”.", "Nhìn danh sách biết cảnh báo nào xem lại được."],
-        ["`web/src/features/proctor/csv-export.ts`", "`downloadConfirmedCsv` lọc `verdict === 'confirmed'`.", "Biên bản sạch — đúng yêu cầu “chỉ lần đã xác nhận”."],
+        ["`web/src/features/proctor/csv-export.ts`", "Biên bản: `confirmed` **hoặc** `false_alarm`.", "Đủ hồ sơ buổi thi: vừa lần đúng vừa lần báo oan (đã kiểm tra)."],
         ["`shared/hub-contract.json` + `config.py`", "`maxBodyBytes` ~1,5 MB.", "Clip base64 cần chỗ gửi lớn hơn 1 MB cũ."],
     ], [4.5, 4.8, 7.3], size=8)
     w.h2("5.5. Câu trả lời khó về quyền riêng tư")
@@ -264,7 +271,43 @@ def part5(w):
 
 
 def part6(w):
-    w.h1("6. Cải tiến 4 — Buổi thử thật với thầy cô (không phải code)", new_page=True)
+    w.h1("6. Cải tiến vận hành sau khi triển khai (cần biết khi vấn đáp sâu)", new_page=True)
+    w.p("Sau khi làm đủ 4 góp ý, nhóm còn chỉnh thêm vài chỗ để **demo ổn định** trên nhiều máy. "
+        "Giám khảo có thể hỏi — học thuộc ý, không cần thuộc code.")
+    w.h2("6.1. Nút xóa máy trên lưới giám thị")
+    w.bullets([
+        "**Vấn đề:** hub **giữ** máy thí sinh kể cả khi đã offline (logic cũ). Restart hub mới xóa hết; "
+        "không tiện khi thử nhiều lần.",
+        "**Cách làm:** mỗi ô máy có icon thùng rác → xác nhận → gỡ máy khỏi lưới.",
+        "**API:** `DELETE /api/stations/{roomId}/{stationId}` — **chỉ xóa session máy**, **không xóa** cảnh báo đã ghi.",
+        "**File:** `exam_store.remove_station`, `http_handler.do_DELETE`, `station-grid.tsx`, `removeStation` trong `exam-sync.ts`.",
+    ])
+    w.h2("6.2. Đồng bộ ngưỡng Quản trị → thí sinh qua hub")
+    w.bullets([
+        "Trước: ngưỡng chỉ nằm localStorage máy mở `/quan-tri` → máy thí sinh vẫn hiện 2 giây dù đã sửa thành 5.",
+        "Nay: **Lưu thay đổi** đẩy `thresholds` lên `/api/settings`; thí sinh đọc lại (khi bắt đầu và mỗi ~2 giây).",
+        "Demo: đổi “Nhiều khuôn mặt” 2→5 → Lưu → nhìn thanh tiến trình thí sinh thành `… / 5.0s`.",
+    ])
+    w.h2("6.3. Gửi cảnh báo ổn định hơn")
+    w.bullets([
+        "Không lưu clip vào localStorage (tránh đầy bộ nhớ → không gửi được hub).",
+        "Gửi thẳng hub thành công → báo “Giám thị đã nhận” ngay.",
+        "Hub từ chối một cảnh báo hỏng (4xx) → bỏ mục đó, **không kẹt cả hàng** hộp thư đi.",
+    ])
+    w.h2("6.4. Dải “Cảnh báo mới cần kiểm tra”")
+    w.p("Trước: dải đỏ có thể **còn trên màn hình** dù hub đã reset / không còn cảnh báo. "
+        "Nay: nếu cảnh báo đó không còn trong danh sách (hoặc đã xem) thì dải đỏ **tự tắt**.")
+    w.h2("6.5. HTTPS khi máy khác mở trang qua LAN")
+    w.bullets([
+        "Webcam trên IP LAN cần **HTTPS** (`npm run dev:https`).",
+        "Cert tự ký phải khớp IP máy hiện tại; đổi Wi‑Fi thì chạy `npm run certs:dev` rồi mở lại `dev:https`.",
+        "Máy khác: mở `https://<IP>:3000` → Advanced → Proceed (cert tự ký là bình thường).",
+        "Hub Python `:8765` phải chạy cùng lúc, vì Next proxy `/api` sang hub.",
+    ])
+
+
+def part6b(w):
+    w.h1("7. Cải tiến 4 — Buổi thử thật với thầy cô (không phải code)", new_page=True)
     w.p("Giám khảo muốn nhóm **nghe người dùng thật**. Đây là phần tổ chức và tiếp thu góp ý — **không phải thêm file AI**, nhưng **mọi bạn đều phải kể được** đã thử gì và học được gì.")
     w.steps([
         "Mời một thầy cô làm giám thị 30–45 phút; 2–3 bạn làm thí sinh.",
@@ -276,7 +319,7 @@ def part6(w):
 
 
 def part7(w):
-    w.h1("7. Việc đã gỡ: cảnh báo bằng âm thanh", new_page=True)
+    w.h1("8. Việc đã gỡ: cảnh báo bằng âm thanh", new_page=True)
     w.p("Theo định hướng hiện tại, nhóm **không dùng** tiếng bíp.")
     w.bullets([
         "Đã xóa `web/src/features/proctor/hooks/use-alert-sound.ts` và file âm thanh trong `web/public/sounds/`.",
@@ -287,7 +330,7 @@ def part7(w):
 
 
 def part8(w):
-    w.h1("8. Đường dự phòng thuật toán nhìn (vision-provider) — trả lời câu hỏi sâu", new_page=True)
+    w.h1("9. Đường dự phòng thuật toán nhìn (vision-provider) — trả lời câu hỏi sâu", new_page=True)
     w.p("Đây là phần giám khảo thích hỏi để xem em có hiểu **giới hạn AI** và **thiết kế mở rộng** không.")
     w.h2("8.1. Vì sao cần?")
     w.bullets([
@@ -309,42 +352,45 @@ def part8(w):
 
 
 def part9(w):
-    w.h1("9. Bản đồ file cải tiến (học thuộc cột “nói một câu”)", new_page=True)
+    w.h1("10. Bản đồ file cải tiến (học thuộc cột “nói một câu”)", new_page=True)
     w.p("Mỗi bạn nên đọc hết bảng này. Không cần thuộc từng dòng code — chỉ cần **nói được một câu** về từng file nếu giám khảo hỏi “sửa ở đâu?”.")
     w.table(["Đường dẫn", "Một câu khi vấn đáp"], [
         ["`web/src/domain/exam-types.ts`", "“Em khai báo thêm kết luận giám thị, clip/ảnh, ngưỡng cúi/ngẩng.”"],
-        ["`shared/hub-contract.json`", "“Hợp đồng web–Python: verdicts, giới hạn dung lượng gửi.”"],
-        ["`desktop-hub/.../exam_store.py`", "“Hub lưu cảnh báo + kết luận + cài đặt lưu đoạn hình trong RAM.”"],
-        ["`desktop-hub/.../http_handler.py`", "“API nhận PATCH verdict và GET/POST settings.”"],
+        ["`shared/hub-contract.json`", "“Hợp đồng web–Python: verdicts, giới hạn dung lượng, API xóa máy.”"],
+        ["`desktop-hub/.../exam_store.py`", "“Hub lưu cảnh báo + kết luận + cài đặt (ngưỡng, clip) trong RAM; có xóa máy.”"],
+        ["`desktop-hub/.../http_handler.py`", "“API PATCH verdict, GET/POST settings, DELETE máy.”"],
         ["`web/src/domain/behavior-engine.ts`", "“Chỗ đếm giây; cúi/ngẩng dùng ngưỡng 6 giây riêng.”"],
         ["`web/src/domain/thresholds.ts`", "“Số mặc định và ô cấu hình ngưỡng.”"],
         ["`web/src/ai/vision-provider.ts`", "“Cửa tầng nhìn + ổ cắm future-custom.”"],
         ["`web/src/features/candidate/hooks/alert-clip-recorder.ts`", "“Ghi ~3 giây trước + ~2 giây trong lúc cảnh báo.”"],
-        ["`web/src/features/candidate/hooks/use-monitoring-session.ts`", "“Bộ não phiên thí sinh: AI, clip, gửi cảnh báo.”"],
+        ["`web/src/features/candidate/hooks/use-monitoring-session.ts`", "“Bộ não phiên thí sinh: AI, clip, đọc ngưỡng từ hub.”"],
         ["`web/src/features/proctor/components/event-detail-drawer.tsx`", "“Hai nút kết luận + nút xem đoạn hình.”"],
+        ["`web/src/features/proctor/components/station-grid.tsx`", "“Lưới máy + nút thùng rác xóa máy offline.”"],
         ["`web/src/features/proctor/components/stat-cards.tsx`", "“Đếm báo nhầm theo loại để chỉnh ngưỡng.”"],
-        ["`web/src/features/proctor/csv-export.ts`", "“Biên bản chỉ lần xác nhận đúng.”"],
+        ["`web/src/features/proctor/csv-export.ts`", "“Biên bản gồm Xác nhận đúng và Báo nhầm.”"],
         ["`web/src/features/admin/.../privacy-settings-card.tsx`", "“Công tắc lưu đoạn hình, mặc định tắt.”"],
-        ["`web/src/services/hub/hub-settings.ts`", "“Đẩy/đọc công tắc lưu hình qua hub cho cả phòng.”"],
-        ["`web/src/services/exam-sync.ts`", "“Gửi cảnh báo; clip gửi thẳng tránh mất trong hộp thư đi.”"],
+        ["`web/src/services/hub/hub-settings.ts`", "“Đẩy/đọc ngưỡng + công tắc lưu hình qua hub.”"],
+        ["`web/src/services/exam-sync.ts`", "“Gửi cảnh báo; clip không nhét localStorage; xóa máy.”"],
     ], [5.5, 11.1], size=9)
 
 
 def part10(w):
-    w.h1("10. Kịch bản demo vấn đáp (5–7 phút)", new_page=True)
+    w.h1("11. Kịch bản demo vấn đáp (5–8 phút)", new_page=True)
     w.p("Ai đứng nói cũng được — **nội dung dưới đây cả nhóm phải nói được**. Có thể luân phiên demo trên máy, nhưng không được bảo “phần này em không biết”.")
     w.steps([
         "Mở đầu (~1 phút): tóm 4 góp ý và nhóm đã đáp lại thế nào (xem mục 1).",
         "Demo Báo nhầm: bấm nút → thẻ số tăng → CSV có cột Kết luận; nói vì sao đếm theo loại.",
         "Demo đoạn hình (nếu đã bật công tắc): badge “Có đoạn hình” → Play → giải thích RAM, mặc định tắt, không quay lúc bấm xác nhận.",
-        "Giải thích ngưỡng: cúi/ngẩng 6 giây vs quay đầu 3 giây; chỉ bảng số lần 1 → chỉnh → lần 2.",
+        "Xuất **Biên bản đã xác nhận**: chỉ rõ file có cả dòng Xác nhận đúng và Báo nhầm.",
+        "Giải thích ngưỡng: cúi/ngẩng 6 giây vs quay đầu 3 giây; demo Lưu Quản trị → thí sinh đổi số giây.",
+        "Demo nút xóa máy offline trên lưới (nếu có máy xám).",
         "Nói quyền riêng tư + buổi thử thầy cô + 1 ý đã sửa theo góp ý (nếu có).",
-        "Chốt sẵn 3 câu: “AI không kết luận gian lận.” / “future-custom là ổ cắm trống.” / “Clip gắn lúc AI cảnh báo, không lúc bấm xác nhận.”",
+        "Chốt: “AI không kết luận gian lận.” / “future-custom là ổ cắm trống.” / “Clip gắn lúc AI cảnh báo.”",
     ])
 
 
 def part11(w):
-    w.h1("11. Ngân hàng câu hỏi khó (học trả lời)", new_page=True)
+    w.h1("12. Ngân hàng câu hỏi khó (học trả lời)", new_page=True)
     items = [
         ("Vì sao thêm Báo nhầm chứ không chỉ “Đã xem”?",
          "Vì “đã xem” không cho biết đúng hay oan. Phải đếm báo nhầm theo loại mới biết chỗ nào tăng ngưỡng thời gian."),
@@ -357,13 +403,17 @@ def part11(w):
         ("Giám khảo bảo quay đoạn 15 phút — em hiểu thế nào?",
          "Viết kịch bản, thử trực tiếp trước webcam, đếm đúng/nhầm/sót, chỉnh ngưỡng rồi thử lại, quay lại quá trình thử/chỉnh làm bằng chứng."),
         ("Clip lưu ở đâu? Xác nhận đúng có tạo clip không?",
-         "Clip tạo khi AI cảnh báo (nếu bật công tắc), nằm RAM máy giám thị trong dữ liệu cảnh báo. Bấm xác nhận chỉ gắn nhãn đúng/nhầm, không quay thêm."),
+         "Clip tạo khi AI cảnh báo (nếu bật công tắc), nằm RAM máy giám thị trong dữ liệu cảnh báo. Bấm xác nhận / báo nhầm chỉ gắn nhãn, không quay thêm."),
         ("Vì sao cúi/ngẩng 6 giây còn quay đầu 3 giây?",
          "Cúi viết nháp là việc bình thường, cần thêm thời gian để giảm báo oan; quay hẳn sang bên đáng chú ý sớm hơn."),
         ("Vì sao không lưu video cả buổi thi?",
          "Quyền riêng tư và dung lượng. Chỉ vài giây quanh cảnh báo, mặc định tắt, chỉ khi nhà trường bật."),
         ("Biên bản gồm những gì?",
-         "Chỉ cảnh báo giám thị đã bấm Xác nhận đúng. Không gồm báo nhầm và chưa kiểm tra."),
+         "Các cảnh báo giám thị đã kết luận: Xác nhận đúng **và** Báo nhầm. Cột Kết luận ghi rõ loại nào. Không gồm cảnh báo chưa bấm nút."),
+        ("Chỉnh ngưỡng ở Quản trị mà thí sinh không đổi — vì sao?",
+         "Phải bấm Lưu thay đổi để đẩy lên hub; hub phải chạy; thí sinh đọc lại từ hub. Chỉ gõ số mà không Lưu thì máy kia không biết."),
+        ("Nút xóa máy làm gì? Có xóa cảnh báo không?",
+         "Gỡ máy khỏi lưới giám thị (session offline / thử nghiệm cũ). Không xóa các cảnh báo đã ghi của máy đó."),
         ("Vì sao bỏ tiếng bíp?",
          "Ưu tiên tín hiệu nhìn thấy, tránh ồn khi trình diễn/thử; vẫn còn dải cảnh báo mới và màu máy."),
         ("Em làm phần nào trong nhóm?",
@@ -376,10 +426,12 @@ def part11(w):
 
 
 def part12(w):
-    w.h1("12. Checklist nộp / trước giờ vấn đáp", new_page=True)
+    w.h1("13. Checklist nộp / trước giờ vấn đáp", new_page=True)
     w.bullets([
-        "☐ Mỗi bạn nói được **cả bốn cải tiến** trong khoảng 2 phút, không nhìn giấy.",
-        "☐ Mỗi bạn tự demo được: Báo nhầm → số tăng; (nếu có) Play đoạn hình; Biên bản đã xác nhận.",
+        "☐ Mỗi bạn nói được **cả bốn cải tiến** (+ vài ý vận hành mục 6) trong khoảng 2–3 phút, không nhìn giấy.",
+        "☐ Mỗi bạn tự demo được: Báo nhầm → số tăng; (nếu có) Play đoạn hình; Biên bản có cả đúng và báo nhầm.",
+        "☐ Demo được: Lưu ngưỡng ở Quản trị → thí sinh đổi số giây.",
+        "☐ Biết nút xóa máy trên lưới giám thị.",
         "☐ Cả nhóm cùng nắm bảng số lần 1 / lần 2 (dù chưa đẹp).",
         "☐ Cả nhóm cùng nắm ảnh/phiếu buổi thử hoặc nói rõ đã làm gì với thầy cô.",
         "☐ Không nhắc âm thanh cảnh báo.",
@@ -399,6 +451,7 @@ def build():
     part4(w)
     part5(w)
     part6(w)
+    part6b(w)
     part7(w)
     part8(w)
     part9(w)

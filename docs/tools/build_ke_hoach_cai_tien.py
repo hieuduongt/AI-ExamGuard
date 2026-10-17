@@ -118,7 +118,7 @@ def section_priority(w):
          "Viết kịch bản. **Thử trực tiếp** (webcam + đóng vai) lần 1 → đếm đúng / báo nhầm / bỏ sót. Chỉnh ngưỡng → **thử lại đúng kịch bản**. Thử thiếu sáng / kính / lệch camera. **Quay màn hình / góc phòng** lúc đang thử và lúc chỉnh ngưỡng.",
          "Kịch bản, **video quay quá trình**, **bảng kết quả trước / sau**", "**Bắt buộc, quan trọng nhất**"],
         ["3a. Tổng kết đã xác nhận",
-         "Nút xuất **biên bản** chỉ gồm các cảnh báo giám thị đã bấm “Xác nhận đúng”.",
+         "Nút xuất **biên bản** gồm các cảnh báo đã kết luận: “Xác nhận đúng” **và** “Báo nhầm”.",
          "File biên bản mẫu", "**Bắt buộc**"],
         ["3b. Đoạn hình ngắn",
          "**Clip video ngắn** (~3 giây trước + ~2 giây trong lúc xảy ra), **mặc định tắt**. Giám thị Play xem lại trong chi tiết cảnh báo.",
@@ -172,10 +172,10 @@ def section_minh(w):
         ["`web/src/services/exam-sync.ts` (và `local-store.ts`, `firestore-sync.ts`)", "Hàm đánh dấu đã xem gửi kèm kết luận."],
         ["`web/src/features/proctor/components/event-detail-drawer.tsx`", "Hai nút “Xác nhận đúng” và “Báo nhầm”."],
         ["`web/src/features/proctor/components/stat-cards.tsx`", "Thẻ thống kê **số lần báo nhầm theo từng loại** cảnh báo."],
-        ["`web/src/features/proctor/csv-export.ts`", "Thêm cột “Kết luận”; thêm nút **xuất biên bản** chỉ gồm cảnh báo đã “Xác nhận đúng”."],
+        ["`web/src/features/proctor/csv-export.ts`", "Thêm cột “Kết luận”; nút **xuất biên bản** gồm cảnh báo đã “Xác nhận đúng” hoặc “Báo nhầm”."],
         ["Kiểm thử", "`desktop-hub/tests/test_hub_api.py`, `test_contract.py`, `web/tests/unit/contract.test.cjs`, `proctor.test.cjs`."],
     ], [7.0, 9.6], size=10)
-    w.p("**Xong khi:** bấm “Báo nhầm” thì số đếm tăng, CSV có cột kết luận, biên bản chỉ có cảnh báo đã xác nhận.")
+    w.p("**Xong khi:** bấm “Báo nhầm” thì số đếm tăng, CSV có cột kết luận, biên bản có cả đúng và báo nhầm (đã kết luận).")
     w.h3("Việc 2 (đã có sẵn — chỉ cần hiểu): Tách ngưỡng cúi/ngẩng")
     w.bullets([
         "`headPoseSeconds` mặc định **6 giây**; quay đầu vẫn **3 giây**.",
