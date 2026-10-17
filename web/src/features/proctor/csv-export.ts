@@ -1,5 +1,6 @@
 // File này tạo và tải về báo cáo cảnh báo dạng CSV (bảng chữ mở được bằng Excel)
-// từ trang giám thị. Có báo cáo đầy đủ và biên bản chỉ gồm cảnh báo đã xác nhận đúng.
+// từ trang giám thị. Có báo cáo đầy đủ và biên bản các cảnh báo đã có kết luận
+// (Xác nhận đúng hoặc Báo nhầm).
 
 import type { AlertVerdict, ExamEvent } from '@/domain/exam-types';
 
@@ -55,10 +56,14 @@ export function downloadEventsCsv(events: ExamEvent[]) {
 }
 
 /**
- * Đây là gì: hàm tải biên bản chỉ gồm cảnh báo giám thị đã "Xác nhận đúng".
- * Mục tiêu: sau buổi thi có bản tổng kết không lẫn báo nhầm và cảnh báo chưa kiểm tra.
+ * Đây là gì: hàm tải biên bản gồm cảnh báo giám thị đã kết luận
+ *   ("Xác nhận đúng" hoặc "Báo nhầm").
+ * Mục tiêu: sau buổi thi có bản tổng kết các lần đã kiểm tra; cột Kết luận phân biệt đúng/nhầm;
+ *   không gồm cảnh báo chưa kết luận.
  */
 export function downloadConfirmedCsv(events: ExamEvent[]) {
-  const confirmed = events.filter((event) => event.verdict === 'confirmed');
-  downloadCsv(buildEventsCsv(confirmed), `AI-ExamGuard-da-xac-nhan-${new Date().toISOString().slice(0, 10)}.csv`);
+  const reviewedWithVerdict = events.filter(
+    (event) => event.verdict === 'confirmed' || event.verdict === 'false_alarm',
+  );
+  downloadCsv(buildEventsCsv(reviewedWithVerdict), `AI-ExamGuard-da-xac-nhan-${new Date().toISOString().slice(0, 10)}.csv`);
 }
