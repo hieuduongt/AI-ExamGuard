@@ -1,13 +1,17 @@
 // File này vẽ thẻ "Luồng cảnh báo" ở trang giám thị: danh sách cảnh báo mới nhất, kèm ô
 // tìm kiếm và các nút lọc.
 
-import { BellRing, Check, CheckCircle2, ChevronRight, Filter, Search } from 'lucide-react';
+import { BellRing, Check, CheckCircle2, ChevronRight, Filter, ImageIcon, Search, Video } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { ExamEvent } from '@/domain/exam-types';
 import { alertIcons, severityClasses } from '../alert-style';
 import type { FilterValue } from '../event-filters';
 import { timeLabel } from '../time-label';
+
+function hasEventMedia(event: ExamEvent) {
+  return Boolean(event.clip?.trim() || event.snapshots?.some(Boolean));
+}
 
 // Props (thông tin khối cha truyền cho khối con): danh sách đã lọc, bộ lọc, từ khóa, cảnh báo
 // đang chọn và các việc cần làm khi người dùng thay đổi chúng.
@@ -42,7 +46,8 @@ export function EventFeed({ filteredEvents, filter, onFilterChange, queryText, o
         {filteredEvents.length ? filteredEvents.map((event) => {
           const Icon = alertIcons[event.type];
           const tone = severityClasses(event.severity);
-          return <button key={event.id} onClick={() => onSelectEvent(event.id)} className={`grid w-full grid-cols-[40px_1fr_auto] items-center gap-3 rounded-xl p-3 text-left transition hover:bg-slate-50 ${selectedId === event.id ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}><span className={`grid size-10 place-items-center rounded-xl ${tone.surface} ${tone.text}`}><Icon className="size-[18px]" /></span><div className="min-w-0"><div className="flex items-center gap-2"><b className="text-xs text-slate-900">{event.roomId} · {event.stationId}</b><span className={`size-1.5 rounded-full ${tone.dot}`} />{event.reviewed && <span className="text-[9px] font-bold text-emerald-600"><Check className="mr-0.5 inline size-3" />Đã xem</span>}</div><p className="mt-1 truncate text-[11px] font-semibold text-slate-600">{event.title}</p><small className="mt-1 block truncate text-[9px] text-slate-400">{event.candidateName} · {event.candidateId} · {timeLabel(event.timestamp)}</small></div><ChevronRight className="size-4 text-slate-300" /></button>;
+          const media = hasEventMedia(event);
+          return <button key={event.id} onClick={() => onSelectEvent(event.id)} className={`grid w-full grid-cols-[40px_1fr_auto] items-center gap-3 rounded-xl p-3 text-left transition hover:bg-slate-50 ${selectedId === event.id ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}><span className={`grid size-10 place-items-center rounded-xl ${tone.surface} ${tone.text}`}><Icon className="size-[18px]" /></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><b className="text-xs text-slate-900">{event.roomId} · {event.stationId}</b><span className={`size-1.5 rounded-full ${tone.dot}`} />{event.reviewed && <span className="text-[9px] font-bold text-emerald-600"><Check className="mr-0.5 inline size-3" />Đã xem</span>}{media && <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700">{event.clip ? <Video className="size-3" /> : <ImageIcon className="size-3" />}{event.clip ? 'Có đoạn hình' : 'Có ảnh'}</span>}</div><p className="mt-1 truncate text-[11px] font-semibold text-slate-600">{event.title}</p><small className="mt-1 block truncate text-[9px] text-slate-400">{event.candidateName} · {event.candidateId} · {timeLabel(event.timestamp)}</small></div><ChevronRight className="size-4 text-slate-300" /></button>;
         }) : <div className="grid min-h-72 place-items-center text-center"><div><CheckCircle2 className="mx-auto size-9 text-emerald-500" /><b className="mt-3 block text-sm">Không có cảnh báo phù hợp</b><p className="mt-1 text-xs text-slate-400">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p></div></div>}
       </CardContent>
     </Card>

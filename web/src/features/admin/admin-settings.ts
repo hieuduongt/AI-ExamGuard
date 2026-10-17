@@ -10,7 +10,7 @@ export type SavedAdminSettings = { thresholds?: BehaviorThresholds; roomName?: s
 /**
  * Đây là gì: hàm đọc chuỗi cài đặt đã lưu của trang quản trị.
  * Mục tiêu: biến chuỗi chữ trong bộ nhớ trình duyệt thành các cài đặt dùng được.
- * Chức năng: giải mã chuỗi JSON (dạng chữ ghi dữ liệu có cấu trúc); "lưu ảnh" mặc định là tắt,
+ * Chức năng: giải mã chuỗi JSON (dạng chữ ghi dữ liệu có cấu trúc); "lưu đoạn hình" mặc định là tắt,
  *   "yêu cầu xác nhận" mặc định là bật nếu không ghi rõ là tắt.
  * Đầu ra: đối tượng gồm thresholds, roomName, stationCount, storeSnapshots, requireConsent;
  *   trả về null nếu dữ liệu đọc không được, để trang giữ nguyên giá trị mặc định.

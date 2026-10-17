@@ -62,3 +62,11 @@ test('events and stations always carry the identity fields the hub requires', ()
   }
   assert.match(interfaceBody('ExamEvent'), /\n\s+id: string;/);
 });
+
+// Các kết luận giám thị trong hợp đồng đều có trong kiểu AlertVerdict.
+test('every verdict in the contract appears in AlertVerdict', () => {
+  assert.match(typesSource, /export type AlertVerdict = 'confirmed' \| 'false_alarm';/);
+  for (const verdict of contract.verdicts) {
+    assert.match(typesSource, new RegExp(`'${verdict}'`));
+  }
+});

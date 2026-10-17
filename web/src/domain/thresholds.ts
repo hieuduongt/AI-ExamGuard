@@ -11,6 +11,10 @@ export const DEFAULT_THRESHOLDS: BehaviorThresholds = {
   noFaceSeconds: 5,
   multipleFacesSeconds: 2,
   headTurnSeconds: 3,
+  // Cúi/ngẩng tách riêng và lâu hơn quay đầu: viết nháp, nhặt bút dễ gây báo nhầm.
+  // Tách riêng còn để sau này gắn thuật toán "nhìn" chính xác hơn (xem ai/vision-provider.ts)
+  // mà không phải viết lại toàn bộ BehaviorEngine.
+  headPoseSeconds: 6,
   gazeAwaySeconds: 5,
   cooldownSeconds: 12,
 };
@@ -63,5 +67,23 @@ export function parseSavedThresholds(raw: string | null): BehaviorThresholds {
     return thresholds;
   } catch {
     return { ...DEFAULT_THRESHOLDS };
+  }
+}
+
+/**
+ * Đây là gì: hàm đọc hai tùy chọn quyền riêng tư đã lưu ở trang Quản trị.
+ * Mục tiêu: trang thí sinh biết có bắt buộc tự tích đồng ý không, và có gửi kèm ảnh nhỏ khi cảnh báo không.
+ * Đầu ra: { storeSnapshots, requireConsent }; mặc định lưu ảnh = tắt, yêu cầu đồng ý = bật.
+ */
+export function parseSavedPrivacy(raw: string | null) {
+  if (!raw) return { storeSnapshots: false, requireConsent: true };
+  try {
+    const parsed = JSON.parse(raw) as { storeSnapshots?: unknown; requireConsent?: unknown };
+    return {
+      storeSnapshots: Boolean(parsed.storeSnapshots),
+      requireConsent: parsed.requireConsent !== false,
+    };
+  } catch {
+    return { storeSnapshots: false, requireConsent: true };
   }
 }

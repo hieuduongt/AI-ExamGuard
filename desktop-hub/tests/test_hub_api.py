@@ -153,6 +153,32 @@ class HubApiTests(unittest.TestCase):
         event = next(e for e in self.snapshot()['events'] if e['id'] == 'api-patch')
         self.assertFalse(event['reviewed'])
 
+    def test_settings_round_trip_without_identity(self):
+        """Kiểm tra GET/POST /api/settings không cần identity; lưu được storeSnapshots."""
+        self.assertEqual(
+            self.call('/api/settings')[:2],
+            (200, {'ok': True, 'storeSnapshots': False, 'requireConsent': True}),
+        )
+        status, body, _ = self.call('/api/settings', {'storeSnapshots': True}, method='POST')
+        self.assertEqual(status, 200)
+        self.assertEqual(body.get('ok'), True)
+        self.assertEqual(body.get('storeSnapshots'), True)
+        self.assertEqual(self.call('/api/settings')[1].get('storeSnapshots'), True)
+
+    def test_patch_with_verdict_false_alarm(self):
+        """Kiểm tra PATCH kèm verdict=false_alarm được lưu; verdict lạ bị từ chối 400."""
+        self.call('/api/events', dict(IDENTITY, id='api-verdict', timestamp=6, reviewed=False), method='POST')
+        self.assertEqual(
+            self.call('/api/events/api-verdict', {'reviewed': True, 'verdict': 'false_alarm'}, method='PATCH')[:2],
+            (200, {'ok': True}),
+        )
+        event = next(e for e in self.snapshot()['events'] if e['id'] == 'api-verdict')
+        self.assertEqual((event['reviewed'], event.get('verdict')), (True, 'false_alarm'))
+        self.assertEqual(
+            self.call('/api/events/api-verdict', {'reviewed': True, 'verdict': 'weird'}, method='PATCH')[:2],
+            (400, {'ok': False, 'error': 'Kết luận không hợp lệ'}),
+        )
+
     def test_keeps_only_newest_500_events_sorted_by_timestamp(self):
         """Kiểm tra hub chỉ giữ 500 cảnh báo mới nhất, xếp theo thời gian mới trước."""
         for index in range(505):
@@ -165,12 +191,12 @@ class HubApiTests(unittest.TestCase):
         timestamps = [e.get('timestamp', 0) for e in events]
         self.assertEqual(timestamps, sorted(timestamps, reverse=True))
 
-    def test_body_over_1mb_is_rejected_without_reading_it(self):
-        """Kiểm tra dữ liệu khai báo lớn hơn 1 MB bị từ chối (400) mà hub không cần đọc nó."""
+    def test_body_over_limit_is_rejected_without_reading_it(self):
+        """Kiểm tra dữ liệu khai báo lớn hơn giới hạn (~1,5 MB) bị từ chối (400) mà hub không cần đọc nó."""
         connection = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=5)
         connection.putrequest('POST', '/api/events')
         connection.putheader('Content-Type', 'application/json')
-        connection.putheader('Content-Length', '1000001')
+        connection.putheader('Content-Length', '1500001')
         connection.endheaders()
         response = connection.getresponse()
         self.assertEqual(response.status, 400)

@@ -1,7 +1,7 @@
 // File này chứa các hàm tính toán cho trang giám thị: đánh dấu máy mất kết nối, lọc và
 // tìm kiếm cảnh báo, đếm số máy theo từng trạng thái. Không vẽ giao diện.
 
-import type { AlertSeverity, ExamEvent, StationStatus } from '@/domain/exam-types';
+import type { AlertSeverity, AlertType, ExamEvent, StationStatus } from '@/domain/exam-types';
 
 // Các lựa chọn của bộ lọc cảnh báo: tất cả, theo mức độ (đỏ/vàng/thông tin), hoặc chưa xem.
 export type FilterValue = 'all' | AlertSeverity | 'unreviewed';
@@ -47,9 +47,9 @@ export function filterEvents(events: ExamEvent[], filter: FilterValue, queryText
 /**
  * Đây là gì: hàm đếm số liệu tổng quan của phòng thi.
  * Mục tiêu: cho giám thị nhìn nhanh tình hình cả phòng.
- * Chức năng: đếm tổng số máy, số máy bình thường, cảnh báo vàng, ưu tiên kiểm tra (đỏ), và số
- *   cảnh báo chưa xác minh.
- * Đầu ra: đối tượng { total, normal, warning, critical, unreviewed }.
+ * Chức năng: đếm tổng số máy, số máy bình thường, cảnh báo vàng, ưu tiên kiểm tra (đỏ),
+ *   số cảnh báo chưa xác minh, và số lần giám thị đã bấm "Báo nhầm".
+ * Đầu ra: đối tượng { total, normal, warning, critical, unreviewed, falseAlarms }.
  * Dùng ở đâu: ProctorScreen (proctor-screen.tsx); kiểm thử trong web/tests/unit/proctor.test.cjs.
  * Liên kết với: components/stat-cards.tsx (hiện các con số này).
  */
@@ -60,5 +60,22 @@ export function countStations(activeStations: StationStatus[], events: ExamEvent
     warning: activeStations.filter((station) => station.state === 'warning').length,
     critical: activeStations.filter((station) => station.state === 'critical').length,
     unreviewed: events.filter((event) => !event.reviewed).length,
+    falseAlarms: events.filter((event) => event.verdict === 'false_alarm').length,
   };
+}
+
+/**
+ * Đây là gì: hàm đếm số lần báo nhầm theo từng loại cảnh báo.
+ * Mục tiêu: biết loại nào hay báo nhầm nhất để chỉnh ngưỡng thời gian cho đúng chỗ.
+ * Đầu ra: mảng { type, count } chỉ gồm các loại đã có ít nhất một lần báo nhầm, sắp giảm dần.
+ */
+export function countFalseAlarmsByType(events: ExamEvent[]) {
+  const counts = new Map<AlertType, number>();
+  for (const event of events) {
+    if (event.verdict !== 'false_alarm') continue;
+    counts.set(event.type, (counts.get(event.type) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
 }

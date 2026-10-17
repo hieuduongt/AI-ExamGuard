@@ -6,8 +6,8 @@
 import { emitHubStatus } from '@/services/browser-signals';
 import { activeHubUrl } from './hub-url';
 
-/** Thời gian chờ tối đa cho mỗi yêu cầu gửi tới máy giám thị: 3,5 giây. */
-const HUB_TIMEOUT_MS = 3500;
+/** Thời gian chờ tối đa cho mỗi yêu cầu gửi tới máy giám thị (clip ngắn có thể lớn hơn vài trăm KB). */
+const HUB_TIMEOUT_MS = 12000;
 
 /**
  * Đây là gì: hàm gửi yêu cầu qua mạng nhưng không chờ quá lâu.

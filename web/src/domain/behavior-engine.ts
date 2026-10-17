@@ -78,7 +78,7 @@ export class BehaviorEngine {
       ['no_face', metrics.faceCount === 0, thresholds.noFaceSeconds],
       ['multiple_faces', metrics.faceCount > 1, thresholds.multipleFacesSeconds],
       ['head_turn', singleFace && Math.abs(metrics.headYaw) > VISION_LIMITS.headYaw, thresholds.headTurnSeconds],
-      ['head_pose', singleFace && Math.abs(metrics.headPitch) > VISION_LIMITS.headPitch, thresholds.headTurnSeconds],
+      ['head_pose', singleFace && Math.abs(metrics.headPitch) > VISION_LIMITS.headPitch, thresholds.headPoseSeconds],
       ['gaze_away', singleFace && (Math.abs(metrics.gazeX) > VISION_LIMITS.gazeX || Math.abs(metrics.gazeY) > VISION_LIMITS.gazeY), thresholds.gazeAwaySeconds],
     ];
     const progress: BehaviorProgress[] = [];

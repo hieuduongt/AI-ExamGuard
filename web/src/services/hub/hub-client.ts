@@ -6,7 +6,7 @@
 import type { ExamEvent, StationStatus } from '@/domain/exam-types';
 import { emitHubStatus } from '@/services/browser-signals';
 import { fetchWithTimeout } from './hub-transport';
-import { normalizeHubUrl, setConfiguredHubUrl } from './hub-url';
+import { activeHubUrl, defaultSplitDevHubUrl, isSplitDevOrigin, normalizeHubUrl, resolveBrowserHubUrl, setConfiguredHubUrl } from './hub-url';
 import { flushPendingEvents } from './outbox';
 
 /**
@@ -38,8 +38,10 @@ export type ProctorPresence = { room: string };
  *   desktop-hub/examguard_desktop/http_handler.py.
  */
 export async function testHubConnection(value: string) {
-  const hubUrl = normalizeHubUrl(value);
-  if (!hubUrl) return { ok: false, hubUrl: '', message: 'Địa chỉ máy giám thị không hợp lệ.' };
+  const typed = normalizeHubUrl(value);
+  if (!typed) return { ok: false, hubUrl: '', message: 'Địa chỉ máy giám thị không hợp lệ.' };
+  // HTTPS + next dev: gọi qua origin trang (proxy), tránh mixed content / 127.0.0.1 sai máy.
+  const hubUrl = resolveBrowserHubUrl(typed);
   try {
     const response = await fetchWithTimeout(`${hubUrl}/api/health`);
     const payload = await response.json() as { ok?: boolean };
@@ -55,25 +57,33 @@ export async function testHubConnection(value: string) {
 }
 
 /**
- * Đây là gì: hàm hỏi thông tin của ứng dụng máy tính đang phục vụ trang này.
- * Mục tiêu: màn hình giám thị biết mình có đang chạy trong ứng dụng máy tính không, và
- *   lấy địa chỉ hub, mã kết nối để hiện cho thí sinh.
- * Chức năng: hỏi đường /api/runtime của chính máy chủ trang; chỉ có trả lời khi trang do
- *   ứng dụng máy tính (desktop-hub/) phục vụ; mọi lỗi đều trả null.
+ * Đây là gì: hàm hỏi thông tin runtime của hub (cổng, hubUrl LAN, mã kết nối).
+ * Mục tiêu: màn hình giám thị biết hub đang chạy ở đâu và hiện địa chỉ/mã cho thí sinh.
+ * Chức năng: thử lần lượt các gốc có thể — hub đang chọn, origin trang (khi EXE phục vụ
+ *   web), hub tách mặc định khi `next dev`. Chỉ nhận khi trả ok + hubUrl; mọi lỗi → null.
  * Đầu ra: việc cần chờ cho ra HubRuntime, hoặc null.
  * Dùng ở đâu: features/proctor/hooks/use-proctor-feed.ts (qua services/exam-sync.ts).
  * Liên kết với: /api/runtime trong desktop-hub/examguard_desktop/http_handler.py.
  */
 export async function getDesktopRuntime(): Promise<HubRuntime | null> {
   if (typeof window === 'undefined') return null;
-  try {
-    const response = await fetchWithTimeout(`${window.location.origin}/api/runtime`);
-    if (!response.ok) return null;
-    const payload = await response.json() as HubRuntime;
-    return payload.ok && payload.hubUrl ? payload : null;
-  } catch {
-    return null;
+  const candidates = [
+    activeHubUrl(),
+    window.location.origin,
+    isSplitDevOrigin() ? defaultSplitDevHubUrl() : '',
+  ].filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
+
+  for (const base of candidates) {
+    try {
+      const response = await fetchWithTimeout(`${base}/api/runtime`);
+      if (!response.ok) continue;
+      const payload = await response.json() as HubRuntime;
+      if (payload.ok && payload.hubUrl) return payload;
+    } catch {
+      /* thử ứng viên tiếp theo */
+    }
   }
+  return null;
 }
 
 /**

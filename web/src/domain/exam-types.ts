@@ -36,9 +36,16 @@ export interface VisionMetrics {
   fps: number;
 }
 
+// Kết luận của giám thị sau khi kiểm tra tận nơi: đúng nghi vấn, hoặc báo nhầm.
+export type AlertVerdict = 'confirmed' | 'false_alarm';
+
 // Một cảnh báo gửi từ máy thí sinh về giám thị: mã riêng, phòng, máy, thí sinh, loại,
 // mức độ, tiêu đề, mô tả, thời điểm, giám thị đã xem chưa, và nguồn tạo ra
 // ('ai' từ camera, 'browser' từ trình duyệt, 'demo' là cảnh báo thử).
+// verdict: kết luận sau khi giám thị xác minh.
+// clip: đoạn hình ngắn (data-URL video) vài giây trước + trong lúc xảy ra.
+// snapshots: chuỗi ảnh JPEG dự phòng nếu trình duyệt không ghi được clip.
+// Chỉ có khi nhà trường bật "lưu đoạn hình ngắn khi cảnh báo".
 export interface ExamEvent {
   id: string;
   roomId: string;
@@ -52,6 +59,9 @@ export interface ExamEvent {
   timestamp: number;
   reviewed: boolean;
   source: 'ai' | 'browser' | 'demo';
+  verdict?: AlertVerdict;
+  clip?: string;
+  snapshots?: string[];
 }
 
 // "Nhịp tim" của một máy thí sinh gửi về đều đặn: ai đang thi, máy đang ở trạng thái nào,
@@ -78,6 +88,7 @@ export interface BehaviorThresholds {
   noFaceSeconds: number;
   multipleFacesSeconds: number;
   headTurnSeconds: number;
+  headPoseSeconds: number;
   gazeAwaySeconds: number;
   cooldownSeconds: number;
 }

@@ -14,7 +14,7 @@ Các giá trị chung (cổng, giới hạn, trường bắt buộc) nằm ở [
 
 ## Quy ước chung
 
-- Dữ liệu JSON UTF-8. Thân yêu cầu tối đa **1 MB**; lớn hơn, rỗng hoặc không phải JSON → coi là không hợp lệ.
+- Dữ liệu JSON UTF-8. Thân yêu cầu tối đa **~1,5 MB** (đủ kèm đoạn hình ngắn); lớn hơn, rỗng hoặc không phải JSON → coi là không hợp lệ.
 - Mọi phản hồi có `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS`,
   `Access-Control-Allow-Headers: Content-Type`, `Cache-Control: no-cache, no-store, must-revalidate`.
 - `OPTIONS` bất kỳ → `204`.
@@ -61,8 +61,10 @@ Chỉ giữ **500** cảnh báo mới nhất.
 Thân: một `StationStatus`. Bắt buộc 4 trường thông tin thí sinh như trên. Máy chủ thêm `serverSeenAt`
 (mili giây) và **thay thế** bản ghi cũ có cùng `roomId` + `stationId`. Trả `200 {"ok": true}`.
 
-### `PATCH /api/events/{id}` — đánh dấu xác minh
-Thân: `{"reviewed": true|false}`. Thân rỗng hoặc không hợp lệ được hiểu là `reviewed = true`.
+### `PATCH /api/events/{id}` — đánh dấu xác minh / kết luận
+Thân: `{"reviewed": true|false, "verdict"?: "confirmed"|"false_alarm"}`.
+Thân rỗng hoặc không hợp lệ được hiểu là `reviewed = true` (không đổi `verdict`).
+`verdict` lạ → `400 {"ok": false, "error": "Kết luận không hợp lệ"}`.
 Trả `200 {"ok": true}` nếu tìm thấy, `404 {"ok": false}` nếu không.
 
 ### Khác

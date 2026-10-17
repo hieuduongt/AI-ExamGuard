@@ -15,7 +15,7 @@ và `web/src/features/candidate/hooks/`. Kiểm thử: `web/tests/unit/behavior-
 | `no_face` | Không có mặt trước máy | Đỏ | Không thấy khuôn mặt nào | 5 giây |
 | `multiple_faces` | Xuất hiện nhiều khuôn mặt | Đỏ | Thấy từ 2 khuôn mặt | 2 giây |
 | `head_turn` | Quay đầu trái/phải kéo dài | Vàng | 1 mặt, góc quay ngang > 14° | 3 giây |
-| `head_pose` | Cúi/ngẩng đầu bất thường | Vàng | 1 mặt, góc cúi/ngẩng > 20° | 3 giây (dùng chung ngưỡng quay đầu) |
+| `head_pose` | Cúi/ngẩng đầu bất thường | Vàng | 1 mặt, góc cúi/ngẩng > 20° | 6 giây (tách riêng, chỉnh được ở trang Quản trị) |
 | `gaze_away` | Hướng mắt lệch màn hình | Vàng | 1 mặt, mắt lệch ngang > 0,55 hoặc dọc > 0,7 | 5 giây |
 | `focus_lost` | Rời khỏi cửa sổ bài thi | Vàng | Trang bị ẩn (chuyển tab, thu nhỏ) | Ngay lập tức |
 | `restricted_input` | Thao tác bàn phím bị hạn chế | Vàng | Ctrl/Cmd + C, V, X hoặc P | Ngay lập tức |

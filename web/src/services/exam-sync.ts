@@ -6,7 +6,7 @@
  * bộ nhớ chạy thử trong trình duyệt (local-demo), hub trong mạng LAN (máy trung tâm của
  * giám thị, chương trình desktop-hub/), và Firebase (dịch vụ đám mây) nếu đã cấu hình.
  */
-import type { ExamEvent, StationStatus } from '@/domain/exam-types';
+import type { AlertVerdict, ExamEvent, StationStatus } from '@/domain/exam-types';
 import { emitHubStatus } from '@/services/browser-signals';
 import { hasFirebaseConfig } from '@/services/firebase/firebase-client';
 import {
@@ -71,8 +71,21 @@ export function publishEvent(event: ExamEvent) {
   saveLocalEvent(event);
   const hubUrl = activeHubUrl();
   if (hubUrl) {
-    enqueueEvent(hubUrl, event);
-    void flushPendingEvents();
+    const hasMedia = Boolean(event.clip || event.snapshots?.length);
+    if (hasMedia) {
+      // Clip/ảnh lớn: gửi thẳng, tránh nhét data-URL vào localStorage (dễ vượt hạn mức).
+      void postToHub('/api/events', event, 'POST', hubUrl).then((ok) => {
+        if (ok) return;
+        const light: ExamEvent = { ...event };
+        delete light.clip;
+        delete light.snapshots;
+        enqueueEvent(hubUrl, light);
+        void flushPendingEvents();
+      });
+    } else {
+      enqueueEvent(hubUrl, event);
+      void flushPendingEvents();
+    }
   }
   saveEventToFirestore(event);
 }
@@ -99,19 +112,19 @@ export function publishStation(station: StationStatus) {
 
 /**
  * Đây là gì: hàm đánh dấu một cảnh báo là "đã xem" (hoặc bỏ dấu) trên mọi kênh.
- * Mục tiêu: giám thị ghi nhận đã xem xét cảnh báo, và mọi nơi đều thấy giống nhau.
- * Chức năng: sửa trong trình duyệt; gửi lệnh PATCH tới /api/events/<mã> của hub; sửa trên
- *   Firebase nếu có. Chạy ngoài trình duyệt thì bỏ qua.
+ * Mục tiêu: giám thị ghi nhận đã kiểm tra, kèm kết luận "đúng" hoặc "báo nhầm".
+ * Chức năng: sửa trong trình duyệt; gửi lệnh PATCH tới /api/events/<mã> của hub (kèm
+ *   verdict nếu có); sửa trên Firebase nếu có. Chạy ngoài trình duyệt thì bỏ qua.
  * Đầu ra: không trả về gì.
  * Dùng ở đâu: features/proctor/proctor-screen.tsx.
  * Liên kết với: markLocalEventReviewed() (local-demo/local-store.ts), postToHub()
  *   (hub/hub-transport.ts), markFirestoreEventReviewed() (firebase/firestore-sync.ts).
  */
-export function markEventReviewed(id: string, reviewed = true) {
+export function markEventReviewed(id: string, reviewed = true, verdict?: AlertVerdict) {
   if (typeof window === 'undefined') return;
-  markLocalEventReviewed(id, reviewed);
-  void postToHub(`/api/events/${encodeURIComponent(id)}`, { reviewed }, 'PATCH');
-  markFirestoreEventReviewed(id, reviewed);
+  markLocalEventReviewed(id, reviewed, verdict);
+  void postToHub(`/api/events/${encodeURIComponent(id)}`, { reviewed, ...(verdict ? { verdict } : {}) }, 'PATCH');
+  markFirestoreEventReviewed(id, reviewed, verdict);
 }
 
 /**

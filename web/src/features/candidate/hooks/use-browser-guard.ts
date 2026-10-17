@@ -17,9 +17,10 @@ import type { EmitAlert } from './use-monitoring-session';
  * Liên kết với: emitAlert (use-monitoring-session.ts) với nguồn 'browser'; loại cảnh báo
  *   'focus_lost' và 'restricted_input' (web/src/domain/alert-catalog.ts).
  */
-export function useBrowserGuard(running: boolean, emitAlert: EmitAlert) {
+export function useBrowserGuard(running: boolean, emitAlert: EmitAlert, experimentMode = false) {
   useEffect(() => {
-    if (!running) return;
+    // Chế độ chạy video thử không canh trình duyệt (đổi cửa sổ để xem giám thị là chuyện bình thường).
+    if (!running || experimentMode) return;
     /**
      * Đây là gì: hàm con chạy mỗi khi trang bị ẩn hoặc hiện lại.
      * Mục tiêu: biết thí sinh chuyển sang tab hay cửa sổ khác.
@@ -49,5 +50,5 @@ export function useBrowserGuard(running: boolean, emitAlert: EmitAlert) {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('keydown', onRestrictedInput);
     };
-  }, [emitAlert, running]);
+  }, [emitAlert, experimentMode, running]);
 }

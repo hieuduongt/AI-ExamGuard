@@ -152,7 +152,9 @@ Cần Node.js 24.x (22.x vẫn chạy, chỉ cảnh báo phiên bản).
 
 ```bash
 npm ci               # cài thư viện (lần đầu, hoặc khi package-lock.json đổi)
-npm run dev          # chạy thử có tự tải lại: http://localhost:3000
+npm run dev          # HTTP: http://localhost:3000 (máy khác LAN thường không bật được webcam)
+npm run dev:https    # HTTPS LAN + webcam: https://<IP-LAN>:3000 (cert tự ký trong certs/; máy khác bấm “Advanced → Proceed”)
+                     # Tách hub: python ../desktop-hub/run_hub.py — web proxy /api → :8765
 npm run lint         # kiểm tra quy tắc viết code
 npx tsc --noEmit     # kiểm tra kiểu TypeScript
 npm test             # kiểm thử đơn vị

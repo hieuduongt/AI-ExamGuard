@@ -4,10 +4,11 @@
   "defaultHubPort": 8765,
   "discoveryPort": 8766,
   "discoveryService": "examguard-hub",
-  "maxBodyBytes": 1000000,
+  "maxBodyBytes": 1500000,
   "eventLimit": 500,
   "identityFields": ["roomId", "stationId", "candidateId", "candidateName"],
   "alertTypes": ["no_face", "multiple_faces", "head_turn", "head_pose", "gaze_away", "focus_lost", "restricted_input"],
+  "verdicts": ["confirmed", "false_alarm"],
   "endpoints": {
     "health": "GET /api/health",
     "runtime": "GET /api/runtime",
@@ -15,6 +16,7 @@
     "discover": "GET /api/discover",
     "postEvent": "POST /api/events",
     "postStation": "POST /api/stations",
-    "reviewEvent": "PATCH /api/events/{id}"
+    "reviewEvent": "PATCH /api/events/{id}",
+    "settings": "GET|POST /api/settings"
   }
 }

@@ -2,20 +2,23 @@
  * File này là "bộ não" của phiên giám sát trên máy thí sinh: mở webcam, cho AI đọc từng khung
  * hình, chấm hành vi, phát cảnh báo và đều đặn báo trạng thái máy về cho giám thị.
  * Thuộc phần logic thí sinh (web/src/features/candidate/hooks/). AI nhìn ảnh camera để ước
- * lượng hướng đầu, hướng mắt; không lưu video.
+ * lượng hướng đầu, hướng mắt. Khi nhà trường bật lưu đoạn hình, gửi kèm clip ngắn quanh cảnh báo.
  */
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EMPTY_METRICS, calculateMetrics } from '@/ai/face-metrics';
 import { drawOverlay } from '@/ai/face-overlay';
 import { loadFaceLandmarker } from '@/ai/face-landmarker-loader';
+import { EMPTY_METRICS, metricsFromVisionResult } from '@/ai/vision-provider';
 import { ALERT_LABELS, alertSeverity } from '@/domain/alert-catalog';
 import { BehaviorEngine, behaviorDetail, type BehaviorProgress } from '@/domain/behavior-engine';
 import type { AlertType, BehaviorThresholds, ExamEvent, VisionMetrics } from '@/domain/exam-types';
 import { classifyMetrics } from '@/domain/station-health';
-import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY, parseSavedThresholds } from '@/domain/thresholds';
+import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY, parseSavedPrivacy, parseSavedThresholds } from '@/domain/thresholds';
 import { hasFirebaseConfig, makeId, publishEvent, publishStation } from '@/services/exam-sync';
+import { fetchHubSettings } from '@/services/hub/hub-settings';
+import { activeHubUrl } from '@/services/hub/hub-url';
 import { cameraErrorMessage } from '../camera-errors';
+import { AlertClipRecorder } from './alert-clip-recorder';
 import { useBrowserGuard } from './use-browser-guard';
 import type { HubState } from './use-hub-connection';
 
@@ -28,10 +31,13 @@ type CooldownTimer = Partial<Record<AlertType, number>>;
 
 // Các con số AI lúc chưa có khung hình nào (mọi giá trị bằng 0).
 const initialMetrics: VisionMetrics = EMPTY_METRICS;
+// Chuỗi ảnh JPEG dự phòng (khi không ghi được clip): mỗi 0,5 giây một khung, giữ 6 khung (~3 giây).
+const SNAPSHOT_INTERVAL_MS = 500;
+const SNAPSHOT_COUNT = 6;
 
-// Thông tin trang thí sinh truyền vào: tình trạng kết nối máy giám thị và hàm đếm lại
-// số cảnh báo còn chờ gửi.
-type Options = { hubState: HubState; refreshPendingCount: () => void };
+// Thông tin trang thí sinh truyền vào: tình trạng kết nối máy giám thị, hàm đếm lại
+// số cảnh báo còn chờ gửi, và (tùy chọn) chế độ chạy video thử nghiệm.
+type Options = { hubState: HubState; refreshPendingCount: () => void; experimentMode?: boolean };
 
 /**
  * Đây là gì: hook (hàm đặc biệt của React giúp màn hình nhớ dữ liệu và tự vẽ lại khi dữ liệu
@@ -50,12 +56,13 @@ type Options = { hubState: HubState; refreshPendingCount: () => void };
  *   chấm hành vi, ngưỡng, danh mục cảnh báo), publishEvent/publishStation
  *   (web/src/services/exam-sync.ts) để gửi đi, useBrowserGuard (use-browser-guard.ts).
  */
-export function useMonitoringSession({ hubState, refreshPendingCount }: Options) {
+export function useMonitoringSession({ hubState, refreshPendingCount, experimentMode = false }: Options) {
   const [candidateName, setCandidateName] = useState('');
   const [candidateId, setCandidateId] = useState('');
   const [stationId, setStationId] = useState('');
   const [roomId, setRoomId] = useState('PHONG-01');
   const [consented, setConsented] = useState(true);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [running, setRunning] = useState(false);
   const [modelState, setModelState] = useState<ModelState>('idle');
   const [metrics, setMetrics] = useState<VisionMetrics>(initialMetrics);
@@ -74,6 +81,7 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const videoObjectUrlRef = useRef<string | null>(null);
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const animationRef = useRef(0);
   const detectionLoopRef = useRef<() => void>(() => undefined);
@@ -91,6 +99,17 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
   const lastFrameRef = useRef({ timestamp: 0, frameCount: 0, fpsStarted: 0, fps: 0 });
   const alertCountRef = useRef(0);
   const thresholdsRef = useRef<BehaviorThresholds>(DEFAULT_THRESHOLDS);
+  const storeSnapshotsRef = useRef(false);
+  const snapshotsRef = useRef<string[]>([]);
+  const lastSnapshotAtRef = useRef(0);
+  const snapshotCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const clipRecorderRef = useRef(new AlertClipRecorder());
+
+  // Khi mở trang: nếu Quản trị yêu cầu tự tích đồng ý thì bắt đầu ở trạng thái chưa đồng ý.
+  useEffect(() => {
+    const privacy = parseSavedPrivacy(localStorage.getItem(SETTINGS_STORAGE_KEY));
+    if (privacy.requireConsent) setConsented(false);
+  }, []);
 
   // Mỗi khi thí sinh sửa thông tin, chép thông tin mới vào ngăn nhớ identityRef.
   useEffect(() => { identityRef.current = { candidateName, candidateId, stationId, roomId }; }, [candidateId, candidateName, roomId, stationId]);
@@ -112,15 +131,14 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
    * Đây là gì: hàm con phát một cảnh báo mới.
    * Mục tiêu: tạo cảnh báo đầy đủ thông tin và gửi về giám thị, nhưng không báo lặp quá dày.
    * Chức năng: với cảnh báo thật (không phải 'demo'), nếu cùng loại vừa gửi chưa quá
-   *   cooldownSeconds giây thì bỏ qua, ngược lại ghi lại thời điểm gửi. Sau đó tăng bộ đếm
-   *   cảnh báo, ghép thông tin thí sinh + loại + mức độ + tiêu đề + mô tả + thời điểm thành
-   *   một cảnh báo có mã riêng, gửi đi, đếm lại hàng chờ, và đưa lên đầu danh sách 6 cảnh
-   *   báo gần nhất trên màn hình.
-   * Đầu ra: không trả về gì.
+   *   cooldownSeconds giây thì bỏ qua, ngược lại ghi lại thời điểm gửi. Khi nhà trường bật
+   *   lưu đoạn hình và nguồn là AI: chốt clip ~3 giây trước + ~2 giây trong lúc xảy ra
+   *   (hoặc chuỗi ảnh JPEG dự phòng). Sau đó gửi cảnh báo, đếm lại hàng chờ, đưa lên danh sách gần nhất.
+   * Đầu ra: không trả về gì (phần chốt clip chạy nền vài giây).
    * Dùng ở đâu: evaluateBehavior và createTestAlert trong file này; useBrowserGuard
    *   (use-browser-guard.ts) cho cảnh báo từ trình duyệt.
    * Liên kết với: alertSeverity, ALERT_LABELS (web/src/domain/alert-catalog.ts); makeId,
-   *   publishEvent (web/src/services/exam-sync.ts); refreshPendingCount (use-delivery-status.ts).
+   *   publishEvent (web/src/services/exam-sync.ts); AlertClipRecorder; refreshPendingCount.
    */
   const emitAlert = useCallback((type: AlertType, detail: string, source: ExamEvent['source'] = 'ai') => {
     const now = Date.now();
@@ -130,20 +148,33 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     alertCountRef.current += 1;
     const identity = identityRef.current;
     const severity = alertSeverity(type);
-    const event: ExamEvent = {
-      id: makeId(),
-      ...identity,
-      type,
-      severity,
-      title: ALERT_LABELS[type],
-      detail,
-      timestamp: now,
-      reviewed: false,
-      source,
-    };
-    publishEvent(event);
-    refreshPendingCount();
-    setRecentEvents((events) => [event, ...events].slice(0, 6));
+    const eventId = makeId();
+    const wantMedia = storeSnapshotsRef.current && source === 'ai';
+    const snapshotFallback = wantMedia && snapshotsRef.current.length ? [...snapshotsRef.current] : undefined;
+
+    void (async () => {
+      let clip: string | undefined;
+      if (wantMedia && videoRef.current) {
+        clip = await clipRecorderRef.current.finalizeAroundAlert(videoRef.current);
+      }
+      const event: ExamEvent = {
+        id: eventId,
+        ...identity,
+        type,
+        severity,
+        title: ALERT_LABELS[type],
+        detail,
+        timestamp: now,
+        reviewed: false,
+        source,
+        ...(clip ? { clip } : {}),
+        // Chỉ gửi chuỗi ảnh khi không có clip (trình duyệt không ghi được video).
+        ...(!clip && snapshotFallback ? { snapshots: snapshotFallback } : {}),
+      };
+      publishEvent(event);
+      refreshPendingCount();
+      setRecentEvents((events) => [event, ...events].slice(0, 6));
+    })();
   }, [refreshPendingCount]);
 
   /**
@@ -233,13 +264,32 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
         canvas.width = video.videoWidth || 1280;
         canvas.height = video.videoHeight || 720;
         drawOverlay(canvas, result);
-        const nextMetrics = calculateMetrics(result, lastFrameRef.current.fps);
+        // Tầng NHÌN (MediaPipe → con số). Tầng QUYẾT ĐỊNH cảnh báo là evaluateBehavior bên dưới.
+        const nextMetrics = metricsFromVisionResult(result, lastFrameRef.current.fps);
         metricsRef.current = nextMetrics;
         lastAnalyzedRef.current = Date.now();
         analysisErrorRef.current = '';
         setErrorMessage('');
-        setStatusText('AI đang phân tích cục bộ trên thiết bị');
+        setStatusText(experimentMode && videoObjectUrlRef.current ? 'AI đang phân tích video thử nghiệm' : 'AI đang phân tích cục bộ trên thiết bị');
         setMetrics(nextMetrics);
+        // Ghi đoạn hình ngắn (canvas → MediaRecorder) và chuỗi ảnh JPEG dự phòng.
+        if (storeSnapshotsRef.current) {
+          clipRecorderRef.current.pump(video);
+          if (now - lastSnapshotAtRef.current >= SNAPSHOT_INTERVAL_MS) {
+            lastSnapshotAtRef.current = now;
+            const snap = snapshotCanvasRef.current ?? document.createElement('canvas');
+            snapshotCanvasRef.current = snap;
+            const width = 320;
+            const height = Math.max(1, Math.round((video.videoHeight || 180) * (width / Math.max(video.videoWidth || 320, 1))));
+            snap.width = width;
+            snap.height = height;
+            const ctx = snap.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, width, height);
+              snapshotsRef.current = [...snapshotsRef.current, snap.toDataURL('image/jpeg', 0.45)].slice(-SNAPSHOT_COUNT);
+            }
+          }
+        }
         evaluateBehavior(nextMetrics, Date.now());
       } catch (error) {
         analysisErrorRef.current = error instanceof Error ? error.message : 'Không phân tích được khung hình';
@@ -248,7 +298,7 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
       }
     }
     animationRef.current = window.setTimeout(() => detectionLoopRef.current(), frameInterval);
-  }, [evaluateBehavior, lowPowerMode]);
+  }, [evaluateBehavior, experimentMode, lowPowerMode]);
 
   // Luôn giữ bản mới nhất của vòng lặp AI trong ngăn nhớ (ví dụ khi bật/tắt chế độ máy yếu),
   // để lần hẹn giờ tiếp theo gọi đúng bản mới.
@@ -273,11 +323,24 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     window.clearTimeout(animationRef.current);
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.onended = null;
+      videoRef.current.pause();
+      videoRef.current.removeAttribute('src');
+      videoRef.current.srcObject = null;
+      videoRef.current.load();
+    }
+    if (videoObjectUrlRef.current) {
+      URL.revokeObjectURL(videoObjectUrlRef.current);
+      videoObjectUrlRef.current = null;
+    }
     landmarkerRef.current?.close();
     landmarkerRef.current = null;
     modelStateRef.current = 'idle';
     engineRef.current.reset();
     progressRef.current = [];
+    snapshotsRef.current = [];
+    clipRecorderRef.current.stop();
     setRunning(false);
     setModelState('idle');
     setStatusText('Phiên giám sát đã dừng');
@@ -288,8 +351,8 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
   // Khi rời trang thí sinh thì tự dừng phiên, để camera không bị bỏ mở.
   useEffect(() => () => stopMonitoring(), [stopMonitoring]);
 
-  // Canh trình duyệt (rời cửa sổ, phím tắt bị hạn chế) trong lúc giám sát.
-  useBrowserGuard(running, emitAlert);
+  // Canh trình duyệt (rời cửa sổ, phím tắt bị hạn chế) trong lúc giám sát; tắt khi chạy video thử.
+  useBrowserGuard(running, emitAlert, experimentMode);
 
   // Khi đang giám sát: gửi nhịp tim trạng thái máy ngay, rồi cứ 2 giây gửi lại một lần.
   useEffect(() => {
@@ -346,23 +409,59 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
     setCandidateId(identity.candidateId);
     setRoomId(identity.roomId);
     setStationId(identity.stationId);
-    thresholdsRef.current = parseSavedThresholds(localStorage.getItem(SETTINGS_STORAGE_KEY));
+    const settingsRaw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    thresholdsRef.current = parseSavedThresholds(settingsRaw);
+    const localPrivacy = parseSavedPrivacy(settingsRaw);
+    storeSnapshotsRef.current = localPrivacy.storeSnapshots;
+    // Ưu tiên công tắc trên hub (do trang Quản trị đẩy lên) nếu có — để máy thí sinh khác vẫn nhận được.
+    const hubSettings = await fetchHubSettings(activeHubUrl());
+    if (hubSettings) storeSnapshotsRef.current = hubSettings.storeSnapshots || localPrivacy.storeSnapshots;
     setActiveThresholds(thresholdsRef.current);
+    snapshotsRef.current = [];
+    lastSnapshotAtRef.current = 0;
+    clipRecorderRef.current.stop();
     setErrorMessage('');
     setModelState('loading');
     modelStateRef.current = 'loading';
-    setStatusText('Đang xin quyền sử dụng webcam…');
+    const useVideoFile = experimentMode && videoFile;
+    setStatusText(useVideoFile ? 'Đang mở video thử nghiệm…' : 'Đang xin quyền sử dụng webcam…');
     try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Trình duyệt này không hỗ trợ truy cập webcam. Hãy dùng phiên bản Chrome hoặc Edge mới nhất.');
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 }, facingMode: 'user' }, audio: false });
-      if (session !== sessionRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
-      streamRef.current = stream;
       if (!videoRef.current) throw new Error('Không tìm thấy vùng hiển thị camera.');
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+      if (useVideoFile) {
+        const objectUrl = URL.createObjectURL(videoFile);
+        videoObjectUrlRef.current = objectUrl;
+        videoRef.current.srcObject = null;
+        videoRef.current.src = objectUrl;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.onended = () => {
+          if (session === sessionRef.current) stopMonitoring();
+        };
+        await videoRef.current.play();
+      } else {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Trình duyệt này không hỗ trợ truy cập webcam. Hãy dùng phiên bản Chrome hoặc Edge mới nhất.');
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 }, facingMode: 'user' }, audio: false });
+        if (session !== sessionRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
+        streamRef.current = stream;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
       if (session !== sessionRef.current) return;
+      // Chờ có kích thước khung hình rồi mới mở bộ ghi đoạn hình (nếu nhà trường bật).
+      if (storeSnapshotsRef.current) {
+        await new Promise<void>((resolve) => {
+          const video = videoRef.current;
+          if (!video) { resolve(); return; }
+          if (video.videoWidth > 0) { resolve(); return; }
+          const onReady = () => { video.removeEventListener('loadeddata', onReady); resolve(); };
+          video.addEventListener('loadeddata', onReady);
+          window.setTimeout(() => { video.removeEventListener('loadeddata', onReady); resolve(); }, 1500);
+        });
+        if (session !== sessionRef.current) return;
+        if (videoRef.current) clipRecorderRef.current.start(videoRef.current);
+      }
       setRunning(true);
       runningRef.current = true;
       setStatusText('Đang tải mô hình nhận diện khuôn mặt…');
@@ -374,14 +473,14 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
         landmarkerRef.current = detector;
         modelStateRef.current = 'ready';
         setModelState('ready');
-        setStatusText('AI đang phân tích cục bộ trên thiết bị');
+        setStatusText(useVideoFile ? 'AI đang phân tích video thử nghiệm' : 'AI đang phân tích cục bộ trên thiết bị');
         detectionLoopRef.current();
       } catch (error) {
         if (session !== sessionRef.current) return;
         modelStateRef.current = 'camera-only';
         analysisErrorRef.current = error instanceof Error ? error.message : 'Không tải được mô hình MediaPipe';
         setModelState('camera-only');
-        setStatusText('Camera hoạt động; mô hình AI chưa tải được');
+        setStatusText(useVideoFile ? 'Video chạy; mô hình AI chưa tải được' : 'Camera hoạt động; mô hình AI chưa tải được');
         setErrorMessage(`Chưa có AI nhận diện. ${analysisErrorRef.current}`);
       }
     } catch (error) {
@@ -392,8 +491,14 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
       runningRef.current = false;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
-      setStatusText('Không thể khởi động webcam');
-      setErrorMessage(cameraErrorMessage(error));
+      if (videoObjectUrlRef.current) {
+        URL.revokeObjectURL(videoObjectUrlRef.current);
+        videoObjectUrlRef.current = null;
+      }
+      setStatusText(useVideoFile ? 'Không thể mở video thử nghiệm' : 'Không thể khởi động webcam');
+      setErrorMessage(useVideoFile
+        ? (error instanceof Error ? error.message : 'Không mở được file video.')
+        : cameraErrorMessage(error));
     }
   }
 
@@ -412,7 +517,7 @@ export function useMonitoringSession({ hubState, refreshPendingCount }: Options)
 
   return {
     candidateName, setCandidateName, candidateId, setCandidateId, roomId, setRoomId, stationId, setStationId,
-    consented, setConsented, running, modelState, metrics, statusText, recentEvents, errorMessage,
+    consented, setConsented, videoFile, setVideoFile, experimentMode, running, modelState, metrics, statusText, recentEvents, errorMessage,
     lowPowerMode, setLowPowerMode, behaviorProgress, activeThresholds, analysisStalled, health,
     videoRef, canvasRef, startMonitoring, stopMonitoring, createTestAlert,
   };

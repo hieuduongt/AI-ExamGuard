@@ -58,3 +58,22 @@ test('a hub pinned for the page wins over the saved address, which wins over the
   assert.equal(hub.activeHubUrl(), 'http://192.168.1.20:8765');
   assert.equal(hub.getConfiguredHubUrl(), 'http://192.168.1.12:8765');
 });
+
+// Khi chạy next dev (cổng 3000), dùng origin trang làm hub — proxy /api trong next.config.
+test('split next-dev origin uses page origin so LAN/HTTPS can proxy /api', () => {
+  const stored = new Map();
+  const hub = loadSource('src/services/hub/hub-url.ts', {
+    'src/services/firebase/firebase-client.ts': { hasFirebaseConfig: false, getFirebaseDb: () => null },
+  }, {
+    window: { location: { origin: 'https://192.168.1.3:3000', protocol: 'https:', hostname: '192.168.1.3' } },
+    localStorage: {
+      getItem: (key) => stored.get(key) ?? null,
+      setItem: (key, value) => stored.set(key, value),
+      removeItem: (key) => stored.delete(key),
+    },
+  });
+  assert.equal(hub.isSplitDevOrigin(), true);
+  assert.equal(hub.activeHubUrl(), 'https://192.168.1.3:3000');
+  hub.setPageHubUrl('http://127.0.0.1:8765');
+  assert.equal(hub.activeHubUrl(), 'https://192.168.1.3:3000');
+});

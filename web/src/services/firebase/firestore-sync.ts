@@ -12,7 +12,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import type { ExamEvent, StationStatus } from '@/domain/exam-types';
+import type { AlertVerdict, ExamEvent, StationStatus } from '@/domain/exam-types';
 import { emitDelivered, emitHubStatus } from '@/services/browser-signals';
 import { getFirebaseDb } from './firebase-client';
 
@@ -61,9 +61,9 @@ export function saveStationToFirestore(station: StationStatus) {
  * Dùng ở đâu: markEventReviewed() trong services/exam-sync.ts.
  * Liên kết với: getFirebaseDb() trong ./firebase-client.ts.
  */
-export function markFirestoreEventReviewed(id: string, reviewed: boolean) {
+export function markFirestoreEventReviewed(id: string, reviewed: boolean, verdict?: AlertVerdict) {
   const db = getFirebaseDb();
-  if (db) void updateDoc(doc(db, 'examEvents', id), { reviewed }).catch(() => undefined);
+  if (db) void updateDoc(doc(db, 'examEvents', id), { reviewed, ...(verdict ? { verdict } : {}) }).catch(() => undefined);
 }
 
 /**

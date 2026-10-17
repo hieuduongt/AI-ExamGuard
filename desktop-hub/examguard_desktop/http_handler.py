@@ -236,24 +236,31 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
                 "hubs": discovery.discovered_hubs(code),
             })
             return
+        if route == "/api/settings":
+            self.send_json(200, {"ok": True, **exam_store.get_settings()})
+            return
         super().do_GET()
 
     def do_POST(self):
         """
-        Đây là gì: hàm nhận dữ liệu gửi lên (POST) từ máy thí sinh.
-        Mục tiêu: lưu cảnh báo và trạng thái máy thi để giám thị theo dõi.
-        Chức năng: dữ liệu phải là JSON dạng từ điển và có đủ IDENTITY_FIELDS, nếu không trả
-          lỗi 400. /api/events cần thêm mã "id", lưu cảnh báo rồi trả 201; /api/stations lưu
-          nhịp tim máy thi rồi trả 200; đường dẫn khác trả 404.
+        Đây là gì: hàm nhận dữ liệu gửi lên (POST) từ máy thí sinh / quản trị.
+        Mục tiêu: lưu cảnh báo, trạng thái máy thi, hoặc cài đặt phòng thi.
+        Chức năng: /api/settings không cần identity; /api/events và /api/stations cần
+          IDENTITY_FIELDS. /api/events cần thêm mã "id", trả 201; /api/stations trả 200.
         Đầu ra: không trả về gì; câu trả lời đã được gửi đi.
         Dùng ở đâu: Python tự gọi khi có POST. Phía web: web/src/services/hub/outbox.ts
-          (gửi cảnh báo), web/src/services/exam-sync.ts (gửi trạng thái máy).
-        Liên kết với: exam_store.add_event, exam_store.save_station, read_json.
+          (gửi cảnh báo), web/src/services/exam-sync.ts (gửi trạng thái máy / cài đặt).
+        Liên kết với: exam_store.add_event, exam_store.save_station, exam_store.save_settings.
         """
         route = urllib.parse.urlparse(self.path).path
         payload = self.read_json()
         if not isinstance(payload, dict):
             self.send_json(400, {"ok": False, "error": "Dữ liệu không hợp lệ"})
+            return
+
+        if route == "/api/settings":
+            saved = exam_store.save_settings(payload)
+            self.send_json(200, {"ok": True, **saved})
             return
 
         if not all(is_non_empty_string(payload.get(field)) for field in IDENTITY_FIELDS):
@@ -293,7 +300,11 @@ class ExamGuardHTTPRequestHandler(SimpleHTTPRequestHandler):
         event_id = urllib.parse.unquote(route[len(prefix):])
         payload = self.read_json()
         reviewed = bool(payload.get("reviewed")) if isinstance(payload, dict) else True
-        updated = exam_store.set_reviewed(event_id, reviewed)
+        verdict = payload.get("verdict") if isinstance(payload, dict) else None
+        if verdict is not None and verdict not in exam_store.VALID_VERDICTS:
+            self.send_json(400, {"ok": False, "error": "Kết luận không hợp lệ"})
+            return
+        updated = exam_store.set_reviewed(event_id, reviewed, verdict)
         self.send_json(200 if updated else 404, {"ok": updated})
 
     def log_message(self, format, *args):

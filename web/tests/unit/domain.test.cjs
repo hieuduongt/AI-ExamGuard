@@ -21,7 +21,7 @@ const neutral = { faceCount: 1, headYaw: 0, headPitch: 0, gazeX: 0, gazeY: 0, fp
 
 // Ngưỡng thời gian mặc định và giới hạn góc/hướng mắt cho mỗi khung hình không bị đổi.
 test('default thresholds and per-frame limits are unchanged', () => {
-  assert.deepEqual({ ...DEFAULT_THRESHOLDS }, { noFaceSeconds: 5, multipleFacesSeconds: 2, headTurnSeconds: 3, gazeAwaySeconds: 5, cooldownSeconds: 12 });
+  assert.deepEqual({ ...DEFAULT_THRESHOLDS }, { noFaceSeconds: 5, multipleFacesSeconds: 2, headTurnSeconds: 3, headPoseSeconds: 6, gazeAwaySeconds: 5, cooldownSeconds: 12 });
   assert.deepEqual({ ...VISION_LIMITS }, { headYaw: 14, headPitch: 20, gazeX: 0.55, gazeY: 0.7 });
 });
 

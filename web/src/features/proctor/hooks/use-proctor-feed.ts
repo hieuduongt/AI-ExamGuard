@@ -13,6 +13,7 @@ import {
   setPageHubUrl,
   subscribeExamData,
 } from '@/services/exam-sync';
+import { defaultSplitDevHubUrl, isSplitDevOrigin } from '@/services/hub/hub-url';
 
 /**
  * Đây là gì: hàm đọc tên phòng thi mà trang quản trị đã lưu.
@@ -78,10 +79,19 @@ export function useProctorFeed() {
       if (cancelled) return;
       if (runtime) {
         const configured = getConfiguredHubUrl();
-        const ownHub = !requestedHub || configured === window.location.origin;
-        if (!requestedHub) setPageHubUrl(window.location.origin);
-        setHubUrl(ownHub || !configured ? runtime.hubUrl : configured);
+        const splitDev = isSplitDevOrigin();
+        // EXE/hub: ghim origin. next dev (+ HTTPS LAN): ghim origin trang — proxy /api → hub :8765.
+        const pageHub = requestedHub
+          ? configured
+          : (splitDev ? defaultSplitDevHubUrl() : window.location.origin);
+        if (pageHub) setPageHubUrl(pageHub);
+        const ownHub = !requestedHub || configured === pageHub || (splitDev && !requestedHub);
+        // Hiển thị địa chỉ máy khác mở được: HTTPS web LAN khi split-dev; còn lại hub LAN từ runtime.
+        setHubUrl(ownHub || !configured ? (splitDev ? window.location.origin : runtime.hubUrl) : configured);
         setConnectCode(ownHub && runtime.discovery && runtime.connectCode ? runtime.connectCode : '');
+      } else if (!requestedHub && isSplitDevOrigin()) {
+        setPageHubUrl(defaultSplitDevHubUrl());
+        setHubUrl(window.location.origin);
       }
       unsubscribe = subscribeExamData(setEvents, setStations, { room: savedRoomName() });
     });

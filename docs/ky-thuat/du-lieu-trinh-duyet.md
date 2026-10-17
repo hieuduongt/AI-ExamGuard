@@ -16,7 +16,6 @@ không hiểu nhau. Nếu buộc phải đổi cấu trúc, hãy tăng hậu t�
 | `examguard:outbox:v1` | Hàng đợi cảnh báo chưa gửi được: `[{ hubUrl, event }]` | `services/hub/outbox.ts` |
 | `examguard:events:v2` | Cảnh báo của chế độ demo (tối đa 500) | `services/local-demo/local-store.ts` |
 | `examguard:stations:v2` | Trạng thái máy của chế độ demo (tối đa 150) | `services/local-demo/local-store.ts` |
-| `examguard:proctor-sound:v1` | Âm thanh cảnh báo ở trang giám thị: `'on'` / `'off'` (không có khóa = bật) | `features/proctor/hooks/use-alert-sound.ts` |
 
 ### Xóa dữ liệu trình duyệt có sao không?
 
@@ -25,7 +24,6 @@ Xóa được, dữ liệu ca thi thật nằm ở trung tâm LAN chứ không n
 - `teacher-hub`, `events`, `stations`: xóa thoải mái (địa chỉ cũ, dữ liệu demo cũ).
 - `outbox`: **không xóa trên máy học sinh đang thi**, vì sẽ mất các cảnh báo còn chờ gửi lại.
 - `settings`: mất cấu hình trang Quản trị (tên phòng, ngưỡng), quay về mặc định.
-- `proctor-sound`: âm thanh quay về Bật.
 
 Xóa riêng các khóa có thể gây lỗi, giữ cấu hình (dán vào Console của DevTools trên đúng trang đó):
 

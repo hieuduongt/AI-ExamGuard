@@ -15,7 +15,7 @@ bảng mật mã**. File [`hub-contract.json`](hub-contract.json) chính là b�
 | `appVersion` | Phiên bản phát hành | `desktop-hub/examguard_desktop/config.py` |
 | `defaultHubPort` | Cổng TCP mặc định của trung tâm LAN (`8765`) | `config.py` và `web/src/services/hub/hub-url.ts` |
 | `discoveryPort`, `discoveryService` | Cổng UDP (`8766`) và tên dịch vụ để tự tìm máy giám thị | `config.py`, `discovery.py` |
-| `maxBodyBytes`, `eventLimit` | Giới hạn 1 MB mỗi yêu cầu / giữ 500 cảnh báo mới nhất | `config.py` |
+| `maxBodyBytes`, `eventLimit` | Giới hạn ~1,5 MB mỗi yêu cầu (đủ kèm đoạn hình ngắn) / giữ 500 cảnh báo mới nhất | `config.py` |
 | `identityFields` | Trường bắt buộc khi gửi cảnh báo / trạng thái máy: phòng, máy, SBD, họ tên | `http_handler.py` và `web/src/domain/exam-types.ts` |
 | `alertTypes` | Danh sách 7 loại cảnh báo | `web/src/domain/exam-types.ts`, `alert-catalog.ts` |
 | `endpoints` | Các API LAN | `http_handler.py` và `web/src/services/hub/`; chi tiết ở [docs/ky-thuat/api-lan.md](../docs/ky-thuat/api-lan.md) |

@@ -18,7 +18,7 @@ nghiệp vụ, hành vi**, chúng được giữ nguyên và ghi lại ở đây
 3. **Ngưỡng chỉ lưu trong trình duyệt của máy quản trị.** Máy thí sinh đọc `examguard:settings:v2` của
    chính nó, nên chỉnh ngưỡng ở máy giáo viên không tự áp dụng cho các máy học sinh.
 
-4. **`head_pose` (cúi/ngẩng) dùng chung ngưỡng thời gian với quay đầu** (`headTurnSeconds`), không chỉnh riêng được.
+4. ~~**`head_pose` dùng chung ngưỡng với quay đầu**~~ — **đã sửa**: thêm `headPoseSeconds` (mặc định 6 giây), chỉnh riêng ở trang Quản trị.
 
 5. **`normalizeHubUrl('http://')` trả về `http://http:8765`** thay vì chuỗi rỗng (đã ghi trong
    `web/tests/unit/hub-url.test.cjs`). Chỉ xảy ra khi người dùng gõ đúng `http://`; kiểm tra kết nối sẽ báo lỗi.

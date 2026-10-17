@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from examguard_desktop import config, discovery  # noqa: E402
+from examguard_desktop import config, discovery, exam_store  # noqa: E402
 from examguard_desktop.http_handler import IDENTITY_FIELDS  # noqa: E402
 
 # Nội dung tệp shared/hub-contract.json đã đọc sẵn.
@@ -39,6 +39,10 @@ class ContractTests(unittest.TestCase):
     def test_required_identity_fields_match_contract(self):
         """Kiểm tra danh sách trường bắt buộc (phòng, máy, mã và tên thí sinh) khớp hợp đồng."""
         self.assertEqual(list(IDENTITY_FIELDS), CONTRACT['identityFields'])
+
+    def test_verdicts_match_contract(self):
+        """Kiểm tra danh sách kết luận giám thị khớp hợp đồng."""
+        self.assertEqual(list(exam_store.VALID_VERDICTS), CONTRACT['verdicts'])
 
 
 if __name__ == '__main__':

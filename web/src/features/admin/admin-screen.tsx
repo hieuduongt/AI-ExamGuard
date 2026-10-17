@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import type { BehaviorThresholds } from '@/domain/exam-types';
 import { DEFAULT_THRESHOLDS, SETTINGS_STORAGE_KEY } from '@/domain/thresholds';
+import { publishHubSettings } from '@/services/hub/hub-settings';
 import { clampThresholdSeconds, downloadConfig, parseAdminSettings } from './admin-settings';
 import { AdminHeading } from './components/admin-heading';
 import { ArchitectureCard } from './components/architecture-card';
@@ -83,6 +84,8 @@ export function AdminScreen() {
    */
   function saveSettings() {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ thresholds: settings, roomName, stationCount, storeSnapshots, requireConsent }));
+    // Đẩy lên hub để máy thí sinh (máy khác) cũng nhận được công tắc lưu đoạn hình.
+    void publishHubSettings({ storeSnapshots, requireConsent });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 3000);
   }

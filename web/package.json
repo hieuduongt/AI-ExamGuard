@@ -6,7 +6,9 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
+    "dev:https": "next dev --hostname 0.0.0.0 --experimental-https --experimental-https-key ./certs/dev-key.pem --experimental-https-cert ./certs/dev-cert.pem",
+
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ignore-pattern .next",

@@ -34,5 +34,8 @@ Không cần đọc hết. Chọn lộ trình hợp với bạn ở dưới, m�
 | [ky-thuat/doi-chieu-32-buoc.md](ky-thuat/doi-chieu-32-buoc.md) | Mỗi bước trong tài liệu "32 câu lệnh" nằm ở file code nào | Ban giám khảo, lập trình viên |
 | [van-de-ton-dong.md](van-de-ton-dong.md) | Các vấn đề đã biết, chưa xử lý | Lập trình viên, người phụ trách |
 | `tai-lieu-du-thi/` | Hồ sơ dự án, 32 câu lệnh, mô tả tính năng, hướng dẫn cho Codex (file docx nộp cuộc thi) | Ban giám khảo |
-| `tools/` | Script Python từng dùng để sinh bản nháp các file docx (không chạy lại để đè, xem `van-de-ton-dong.md`) | Người làm hồ sơ |
+| `tai-lieu-du-thi/AI_ExamGuard_Tai_lieu_hoc_tap_cho_hoc_sinh.docx` | Tài liệu học tập: cách hoạt động, sơ đồ, code quan trọng, bài tập, bộ câu hỏi vấn đáp | Học sinh dự thi |
+| `tai-lieu-du-thi/AI_ExamGuard_Tai_lieu_phan_cai_tien_theo_gop_y.docx` | Tài liệu riêng phần cải tiến theo góp ý giám khảo (chi tiết từng đoạn code, phân công Minh/Ngân/Linh) | Học sinh dự thi |
+| `tai-lieu-du-thi/AI_ExamGuard_Ke_hoach_cai_tien_nop_thu_7.docx` | Kế hoạch cải tiến trước hạn nộp | Người hướng dẫn + học sinh |
+| `tools/` | Script Python từng dùng để sinh bản nháp các file docx (không chạy lại để đè, xem `van-de-ton-dong.md`). Riêng `build_tai_lieu_hoc_sinh.py` (tài liệu học sinh) thì chạy lại được khi code đổi | Người làm hồ sơ |
 | `archive/du-an-python-cu/` | Phiên bản Python cũ, chỉ lưu tham khảo | — |

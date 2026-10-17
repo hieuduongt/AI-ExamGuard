@@ -3,7 +3,7 @@
  * cất ngay trong trình duyệt, nên hai thẻ (tab) của cùng trình duyệt thấy dữ liệu của nhau.
  * Thuộc phần chạy thử cục bộ (local-demo).
  */
-import type { ExamEvent, StationStatus } from '@/domain/exam-types';
+import type { AlertVerdict, ExamEvent, StationStatus } from '@/domain/exam-types';
 import { LOCAL_EVENTS_SIGNAL, LOCAL_STATIONS_SIGNAL, safeParse } from '@/services/browser-signals';
 
 // Kênh chạy thử trong một trình duyệt: hai thẻ của cùng trình duyệt chia sẻ dữ liệu qua
@@ -104,11 +104,17 @@ export function saveLocalStation(station: StationStatus) {
  * Dùng ở đâu: markEventReviewed() trong services/exam-sync.ts.
  * Liên kết với: localEvents(), broadcast().
  */
-export function markLocalEventReviewed(id: string, reviewed: boolean) {
-  const next = localEvents().map((event) => event.id === id ? { ...event, reviewed } : event);
+export function markLocalEventReviewed(id: string, reviewed: boolean, verdict?: AlertVerdict) {
+  const next = localEvents().map((event) => {
+    if (event.id !== id) return event;
+    const updated = { ...event, reviewed };
+    if (verdict) updated.verdict = verdict;
+    else if (!reviewed) delete updated.verdict;
+    return updated;
+  });
   localStorage.setItem(EVENT_KEY, JSON.stringify(next));
   window.dispatchEvent(new CustomEvent(LOCAL_EVENTS_SIGNAL));
-  broadcast({ kind: 'review', id, reviewed });
+  broadcast({ kind: 'review', id, reviewed, verdict });
 }
 
 /**

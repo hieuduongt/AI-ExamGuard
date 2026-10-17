@@ -15,6 +15,11 @@ data_lock = threading.Lock()
 exam_events = []
 # Trạng thái từng máy thi, khóa là "<mã phòng>::<mã máy>".
 exam_stations = {}
+# Cài đặt phòng thi do trang Quản trị đẩy lên (máy thí sinh đọc lại khi bắt đầu phiên).
+room_settings = {
+    "storeSnapshots": False,
+    "requireConsent": True,
+}
 
 
 def add_event(payload):
@@ -69,11 +74,40 @@ def snapshot():
     return {"events": events, "stations": stations}
 
 
-def set_reviewed(event_id, reviewed):
+def get_settings():
     """
-    Đây là gì: hàm đánh dấu một cảnh báo là "đã xem" hoặc "chưa xem".
-    Mục tiêu: giám thị ghi lại cảnh báo nào mình đã kiểm tra.
-    Chức năng: tìm cảnh báo có mã event_id rồi đặt trường reviewed theo giá trị được gửi.
+    Đây là gì: hàm đọc cài đặt phòng thi đang lưu trên hub.
+    Mục tiêu: máy thí sinh biết có bật lưu đoạn hình ngắn hay không.
+    """
+    with data_lock:
+        return dict(room_settings)
+
+
+def save_settings(payload):
+    """
+    Đây là gì: hàm cập nhật cài đặt phòng thi trên hub.
+    Mục tiêu: trang Quản trị bật/tắt lưu đoạn hình thì mọi máy thí sinh nối hub đều nhận được.
+    """
+    if not isinstance(payload, dict):
+        return get_settings()
+    with data_lock:
+        if "storeSnapshots" in payload:
+            room_settings["storeSnapshots"] = bool(payload.get("storeSnapshots"))
+        if "requireConsent" in payload:
+            room_settings["requireConsent"] = bool(payload.get("requireConsent"))
+        return dict(room_settings)
+
+
+# Các kết luận giám thị được phép ghi vào cảnh báo (khớp shared/hub-contract.json › verdicts).
+VALID_VERDICTS = ("confirmed", "false_alarm")
+
+
+def set_reviewed(event_id, reviewed, verdict=None):
+    """
+    Đây là gì: hàm đánh dấu một cảnh báo là "đã xem" hoặc "chưa xem", kèm kết luận.
+    Mục tiêu: giám thị ghi lại cảnh báo nào mình đã kiểm tra và kết luận đúng hay báo nhầm.
+    Chức năng: tìm cảnh báo có mã event_id rồi đặt trường reviewed; nếu verdict là
+      "confirmed" hoặc "false_alarm" thì ghi thêm; nếu bỏ dấu đã xem thì xóa verdict cũ.
     Đầu ra: True nếu tìm thấy và đã sửa, False nếu không có cảnh báo đó.
     Dùng ở đâu: http_handler.py, khi có yêu cầu PATCH /api/events/<mã>.
     Liên kết với: web/src/services/exam-sync.ts (phía web gửi yêu cầu đánh dấu).
@@ -82,5 +116,9 @@ def set_reviewed(event_id, reviewed):
         for event in exam_events:
             if event.get("id") == event_id:
                 event["reviewed"] = reviewed
+                if verdict in VALID_VERDICTS:
+                    event["verdict"] = verdict
+                elif not reviewed:
+                    event.pop("verdict", None)
                 return True
     return False

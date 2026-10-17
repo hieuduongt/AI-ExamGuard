@@ -57,10 +57,9 @@ Yêu cầu
 3. Khi có dấu hiệu bất thường
 -----------------------------
 - Dashboard giáo viên hiện rõ phòng, số máy, họ tên và số báo danh.
-- Máy chuyển màu vàng/đỏ, có dải "Cảnh báo mới cần kiểm tra" và kêu tiếng cảnh báo.
-  Nút "Âm thanh: Bật/Tắt" ở đầu dashboard để bật/tắt tiếng. Nếu nút chuyển thành
-  "Bấm để bật âm thanh" (trình duyệt chặn tự phát tiếng), bấm vào nút đó một lần.
-- Giáo viên mở chi tiết, tới xem thực tế, rồi bấm "Đánh dấu đã xác minh".
+- Máy chuyển màu vàng/đỏ, có dải "Cảnh báo mới cần kiểm tra" (không dùng âm thanh).
+- Giáo viên mở chi tiết, tới xem thực tế, rồi bấm "Xác nhận đúng" hoặc "Báo nhầm".
+  Số lần báo nhầm được đếm theo từng loại để chỉnh ngưỡng sau này.
 - Màu máy: XANH = bình thường; VÀNG = quay đầu/cúi/mắt lệch kéo dài, hoặc AI
   tạm dừng; ĐỎ = không thấy mặt hoặc nhiều khuôn mặt; XÁM "mất kết nối" = 7 giây
   không nhận được tín hiệu từ máy đó.
@@ -68,7 +67,8 @@ Yêu cầu
 
 4. Kết thúc ca thi
 ------------------
-1) Trên máy giáo viên bấm "Xuất báo cáo" (file CSV mở được bằng Excel).
+1) Trên máy giáo viên bấm "Xuất báo cáo" (mọi cảnh báo) và/hoặc "Biên bản đã xác nhận"
+   (chỉ những lần giám thị bấm Xác nhận đúng). File CSV mở được bằng Excel.
 2) Học sinh bấm Dừng rồi đóng ứng dụng.
 3) Sau đó mới đóng EXE trên máy giáo viên. Dữ liệu cảnh báo chỉ nằm trong bộ nhớ,
    đóng EXE là mất.

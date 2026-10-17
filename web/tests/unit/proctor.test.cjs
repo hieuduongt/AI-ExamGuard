@@ -60,14 +60,14 @@ test('stations silent for more than 7 seconds are shown offline, then counted', 
   ];
   const active = markOfflineStations(stations, 10000);
   assert.deepEqual(active.map((item) => item.state), ['offline', 'warning', 'offline']);
-  assert.deepEqual({ ...countStations(active, [event({}), event({ reviewed: true })]) },
-    { total: 3, normal: 0, warning: 1, critical: 0, unreviewed: 1 });
+  assert.deepEqual({ ...countStations(active, [event({}), event({ reviewed: true, verdict: 'false_alarm' }), event({ reviewed: true, verdict: 'confirmed' })]) },
+    { total: 3, normal: 0, warning: 1, critical: 0, unreviewed: 1, falseAlarms: 1 });
 });
 
 // File CSV có ký hiệu BOM (để Excel đọc đúng tiếng Việt), tiêu đề tiếng Việt, xử lý dấu ngoặc kép.
-test('CSV export has a BOM, a Vietnamese header and escaped quotes', () => {
-  const csv = buildEventsCsv([event({ detail: 'nói "xin chào"', reviewed: true })]);
+test('CSV export has a BOM, a Vietnamese header, verdict column and escaped quotes', () => {
+  const csv = buildEventsCsv([event({ detail: 'nói "xin chào"', reviewed: true, verdict: 'confirmed' })]);
   const [header, row] = csv.split('\n');
-  assert.equal(header, '\uFEFF"Thời gian","Phòng","Máy","Số báo danh","Thí sinh","Mức độ","Sự kiện","Chi tiết","Đã xem"');
-  assert.ok(row.endsWith('"PHONG-01","PC-01","SBD001","Nguyễn Văn A","critical","Không có mặt trước máy","nói ""xin chào""","Có"'));
+  assert.equal(header, '\uFEFF"Thời gian","Phòng","Máy","Số báo danh","Thí sinh","Mức độ","Sự kiện","Chi tiết","Đã xem","Kết luận"');
+  assert.ok(row.endsWith('"PHONG-01","PC-01","SBD001","Nguyễn Văn A","critical","Không có mặt trước máy","nói ""xin chào""","Có","Xác nhận đúng"'));
 });

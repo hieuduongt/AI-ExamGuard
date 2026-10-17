@@ -5,6 +5,7 @@
  * (web/src/features/candidate/). Nó chỉ ghép các khối giao diện và các hook lại với nhau.
  */
 
+import { useState } from 'react';
 import { ExamGuardHeader } from '@/components/layout/examguard-header';
 import { AdvisoryNote } from './components/advisory-note';
 import { CameraPanel } from './components/camera-panel';
@@ -24,20 +25,16 @@ import { useMonitoringSession } from './hooks/use-monitoring-session';
  * Đây là gì: React component (một khối giao diện, như một viên gạch ghép nên màn hình) của
  *   cả trang thí sinh /thi-sinh.
  * Mục tiêu: dẫn thí sinh từ bước nhập thông tin đến lúc camera giám sát chạy trong giờ thi.
- * Chức năng: lấy dữ liệu từ 4 hook (hàm đặc biệt của React giúp màn hình nhớ dữ liệu và tự
- *   vẽ lại khi dữ liệu đổi): trạng thái gửi cảnh báo, kết nối máy giám thị, phiên giám sát,
- *   tìm máy giám thị trong mạng; chọn màu chấm trạng thái (đỏ/vàng/xanh/xám); rồi xếp các
- *   khối con. Phần biểu mẫu và phần giám sát luôn cùng được gắn trên trang, chỉ ẩn/hiện bằng
- *   lớp `hidden`, để thẻ <video> của camera không bị mất khi chuyển qua lại.
+ * Chức năng: lấy dữ liệu từ 4 hook; nếu địa chỉ có ?thu-nghiem=1 thì bật chế độ chạy video thử.
  * Đầu ra: giao diện trang thí sinh.
  * Dùng ở đâu: web/src/app/thi-sinh/page.tsx.
- * Liên kết với: useDeliveryStatus, useHubConnection, useMonitoringSession, useHubDiscovery
- *   (thư mục hooks/) và các khối trong thư mục components/.
  */
 export function CandidateScreen() {
+  const [experimentMode] = useState(() => typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('thu-nghiem') === '1');
   const { deliveredIds, pendingCount, refreshPendingCount } = useDeliveryStatus();
   const { hubAddress, hubState, hubMessage, changeHubAddress, connectTeacherHub, connectTo } = useHubConnection();
-  const session = useMonitoringSession({ hubState, refreshPendingCount });
+  const session = useMonitoringSession({ hubState, refreshPendingCount, experimentMode });
   const discovery = useHubDiscovery(!session.running && hubState !== 'connected', connectTo);
   const { running, modelState, health } = session;
 
@@ -67,6 +64,9 @@ export function CandidateScreen() {
             hubState={hubState}
             errorMessage={session.errorMessage}
             startMonitoring={session.startMonitoring}
+            experimentMode={experimentMode}
+            videoFile={session.videoFile}
+            setVideoFile={session.setVideoFile}
             hubPanel={<HubConnectionPanel hubAddress={hubAddress} hubState={hubState} hubMessage={hubMessage} changeHubAddress={changeHubAddress} connectTeacherHub={connectTeacherHub} discovery={discovery} roomId={session.roomId} />}
           />
 
