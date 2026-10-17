@@ -36,6 +36,8 @@ export function downloadEventsCsv(events: ExamEvent[]) {
     downloadCsv(buildEventsCsv(events), `AI-ExamGuard-${new Date().toISOString().slice(0, 10)}.csv`);
 }
 export function downloadConfirmedCsv(events: ExamEvent[]) {
-    const confirmed = events.filter((event) => event.verdict === 'confirmed');
-    downloadCsv(buildEventsCsv(confirmed), `AI-ExamGuard-da-xac-nhan-${new Date().toISOString().slice(0, 10)}.csv`);
+    const reviewedWithVerdict = events.filter(
+        (event) => event.verdict === 'confirmed' || event.verdict === 'false_alarm',
+    );
+    downloadCsv(buildEventsCsv(reviewedWithVerdict), `AI-ExamGuard-da-xac-nhan-${new Date().toISOString().slice(0, 10)}.csv`);
 }
